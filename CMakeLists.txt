@@ -28,7 +28,9 @@ endif()
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 #Here, the executable is declared with its sources. "main", or "main.exe" on windows will be the program's name
-add_executable(main "main.c" "inputs.h" "inputs.c" "next.h" "next.c" "playfield.h" "playfield.c")
+add_executable(main "main.c" "constants.h" "game_state.h" "game_state.c"
+               "inputs.h" "inputs.c" "next.h" "next.c" "playfield.h" "playfield.c" "square.h" "tetrominos.h"
+               "tetrominos.c")
 
 #Link raylib to main
 target_link_libraries(main 
