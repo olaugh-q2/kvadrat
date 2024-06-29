@@ -1,5 +1,7 @@
 #include "raylib.h"
 
+#include "inputs.h"
+
 void DisplayInputs(const Font* font) {
   DrawTextEx(*font, "INPUTS", (Vector2){180, 22}, font->baseSize * 0.5, 1.0,
              BLACK);
@@ -42,26 +44,27 @@ void DisplayInputs(const Font* font) {
   DrawCircle(278, 74, 6, GRAY);
 
   if (IsGamepadAvailable(0)) {
-    if (IsGamepadButtonDown(0, 4)) {
+    IsGamepadButtonDown(0, GAMEPAD_BUTTON_UNKNOWN);
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
       DrawRectangle(179, 59, 11, 12, RED);
     }
-    if (IsGamepadButtonDown(0, 1)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
       DrawRectangle(189, 49, 12, 11, RED);
     }
-    if (IsGamepadButtonDown(0, 3)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
       DrawRectangle(189, 70, 12, 11, RED);
     }
-    if (IsGamepadButtonDown(0, 2)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
       DrawRectangle(200, 59, 11, 12, RED);
     }
-    if (IsGamepadButtonDown(0, 13)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
       DrawRectangle(220, 71, 8, 6, RED);
       DrawTriangle((Vector2){220, 71}, (Vector2){217, 74}, (Vector2){220, 77},
                    RED);
       DrawTriangle((Vector2){228, 71}, (Vector2){228, 77}, (Vector2){231, 74},
                    RED);
     }
-    if (IsGamepadButtonDown(0, 15)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
       DrawRectangle(236, 71, 8, 6, RED);
       DrawTriangle((Vector2){236, 71}, (Vector2){233, 74}, (Vector2){236, 77},
                    RED);
@@ -69,10 +72,10 @@ void DisplayInputs(const Font* font) {
                    RED);
     }
 
-    if (IsGamepadButtonDown(0, 7)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
       DrawCircle(262, 74, 7, RED);
     }
-    if (IsGamepadButtonDown(0, 6)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)) {
       DrawCircle(278, 74, 7, RED);
     }
   }

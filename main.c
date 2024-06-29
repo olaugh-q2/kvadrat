@@ -1,5 +1,6 @@
 #include "raylib.h"
 
+#include "game_state.h"
 #include "inputs.h"
 #include "next.h"
 #include "playfield.h"
@@ -15,13 +16,22 @@ int main(void) {
 
   Font font = LoadFont("Futura-Medium-01.ttf");
   SetTargetFPS(60);
+  GameState *game_state = CreateInitialGameState();
+
 
   while (!WindowShouldClose()) {
     BeginDrawing();
 
     ClearBackground(GRAY);
 
-    DisplayPlayfield();
+    UpdateLateralMovementIntent(game_state);
+    MaybeMovePieceLaterally(game_state);
+
+    Playfield *playfield = CreateInitialPlayfield();
+    CopyActivePieceToPlayfield(game_state, playfield);
+    DisplayPlayfield(playfield);
+    DestroyPlayfield(playfield);
+
     DisplayNext(&font);
     DisplayInputs(&font);
 
@@ -34,6 +44,8 @@ int main(void) {
   }
 
   CloseWindow();
+
+  DestroyGameState(game_state);
 
   return 0;
 }

@@ -1,0 +1,41 @@
+#ifndef GAME_STATE_H
+#define GAME_STATE_H
+
+#include "constants.h"
+#include "square.h"
+
+#include <stdbool.h>
+
+typedef struct {
+  int squares[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
+  int active_piece[4][4];
+  int piece_queue[14];
+  int active_piece_row;
+  int active_piece_column;
+  int active_piece_rotation;
+  int active_piece_index;
+  int pieces_until_redraw;
+
+  int lateral_movement_counter;
+  int lateral_movement_direction;
+  bool lateral_movement_repeating;
+
+  int gravity_counter;
+  int level;
+  int gravity_delay;
+  
+} GameState;
+
+GameState *CreateInitialGameState();
+
+void DestroyGameState(GameState *game_state);
+
+void DrawRandomPieces(int piece_queue[14], int start_index);
+
+void UpdateLateralMovementIntent(GameState *game_state);
+
+bool TestActivePieceCollision(const GameState *game_state, int row, int col);
+
+void MaybeMovePieceLaterally(GameState *game_state);
+
+#endif // GAME_STATE_H
