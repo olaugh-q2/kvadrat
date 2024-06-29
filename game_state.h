@@ -20,10 +20,14 @@ typedef struct {
   int lateral_movement_direction;
   bool lateral_movement_repeating;
 
+  int rotation_counter;
+  int rotation_direction;
+
   int gravity_counter;
   int level;
+  int soft_drop_delay;
   int gravity_delay;
-  
+
 } GameState;
 
 GameState *CreateInitialGameState();
@@ -37,5 +41,9 @@ void UpdateLateralMovementIntent(GameState *game_state);
 bool TestActivePieceCollision(const GameState *game_state, int row, int col);
 
 void MaybeMovePieceLaterally(GameState *game_state);
+
+void UpdateRotationIntent(GameState *game_state);
+
+void MaybeApplyGravity(GameState *game_state);
 
 #endif // GAME_STATE_H

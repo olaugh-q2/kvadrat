@@ -26,9 +26,13 @@ GameState *CreateInitialGameState() {
   game_state->lateral_movement_direction = 0;
   game_state->lateral_movement_repeating = false;
 
+  game_state->rotation_counter = 0;
+  game_state->rotation_direction = 0;
+
   game_state->gravity_counter = 0;
   game_state->level = 1;
-  game_state->gravity_delay = 60; 
+  game_state->gravity_delay = 60;
+  game_state->soft_drop_delay = 3;
 
   return game_state;
 }
@@ -84,7 +88,7 @@ void MaybeMovePieceLaterally(GameState *game_state) {
   if (game_state->lateral_movement_counter >= LATERAL_MOVEMENT_DELAY) {
     if (game_state->lateral_movement_repeating) {
       game_state->lateral_movement_counter =
-        LATERAL_MOVEMENT_DELAY - LATERAL_MOVEMENT_REPEAT_DELAY;
+          LATERAL_MOVEMENT_DELAY - LATERAL_MOVEMENT_REPEAT_DELAY;
     } else {
       game_state->lateral_movement_counter = 0;
       game_state->lateral_movement_repeating = true;
@@ -96,6 +100,35 @@ void MaybeMovePieceLaterally(GameState *game_state) {
                                     test_column)) {
         game_state->active_piece_column = test_column;
       }
+    }
+  }
+}
+
+void UpdateRotationIntent(GameState *game_state) {
+  game_state->rotation_counter++;
+  int new_direction = 0;
+  if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
+    new_direction = -1;
+  } else if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)) {
+    new_direction = 1;
+  }
+  if (new_direction != game_state->rotation_direction) {
+    game_state->rotation_counter = ROTATION_DELAY;
+  }
+  game_state->rotation_direction = new_direction;
+
+}
+
+void MaybeApplyGravity(GameState *game_state) {
+  game_state->gravity_counter++;
+  int gravity_delay = IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN)
+                          ? game_state->soft_drop_delay
+                          : game_state->gravity_delay;
+  if (game_state->gravity_counter >= gravity_delay) {
+    game_state->gravity_counter = 0;
+    if (!TestActivePieceCollision(game_state, game_state->active_piece_row + 1,
+                                  game_state->active_piece_column)) {
+      game_state->active_piece_row++;
     }
   }
 }
