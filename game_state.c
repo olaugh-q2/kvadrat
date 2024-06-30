@@ -4,6 +4,7 @@
 #include "game_state.h"
 #include "tetrominos.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -32,8 +33,14 @@ GameState *CreateInitialGameState() {
 
   game_state->gravity_counter = 0;
   game_state->level = 1;
-  game_state->gravity_delay = 30000;
-  game_state->soft_drop_delay = 3;
+  game_state->gravity_delay = 20;
+  game_state->soft_drop_delay = 2;
+
+  game_state->hard_dropped = false;
+
+  game_state->soft_lock_counter = 0;
+  game_state->lock_counter = 0;
+  game_state->locking_piece = false;
 
   return game_state;
 }
@@ -49,8 +56,8 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
     bag[j] = temp;
   }
   for (int i = 0; i < 7; i++) {
-    piece_queue[start_index + i] = T_PIECE;
-    // piece_queue[start_index + i] = bag[i];
+    // piece_queue[start_index + i] = T_PIECE;
+    piece_queue[start_index + i] = bag[i];
   }
 }
 
@@ -59,7 +66,8 @@ bool TestPieceCollision(const GameState *game_state, const int piece[4][4],
   for (int piece_row = 0; piece_row < 4; piece_row++) {
     for (int piece_col = 0; piece_col < 4; piece_col++) {
       if (piece[piece_row][piece_col] != EMPTY_SQUARE) {
-        //printf("piece[%d]][%d]: %d\n", piece_row, piece_col, piece[piece_row][piece_col]);
+        // printf("piece[%d]][%d]: %d\n", piece_row, piece_col,
+        // piece[piece_row][piece_col]);
         const int playfield_row = piece_row + row;
         const int playfield_col = piece_col + col;
         if (playfield_row < 0 || playfield_row >= PLAYFIELD_HEIGHT ||
@@ -75,7 +83,8 @@ bool TestPieceCollision(const GameState *game_state, const int piece[4][4],
               (playfield_row >= 0) && (playfield_row < PLAYFIELD_HEIGHT) &&
               game_state->squares[playfield_row][playfield_col] !=
                   EMPTY_SQUARE) {
-            printf("collision: square not empty: %d\n", game_state->squares[playfield_row][playfield_col]);
+            printf("collision: square not empty: %d\n",
+                   game_state->squares[playfield_row][playfield_col]);
           }
           return true;
         }
@@ -86,6 +95,7 @@ bool TestPieceCollision(const GameState *game_state, const int piece[4][4],
 }
 
 bool TestActivePieceCollision(const GameState *game_state, int row, int col) {
+  printf("TestActivePieceCollision row: %d, col: %d\n", row, col);
   return TestPieceCollision(game_state, game_state->active_piece, row, col);
 }
 
@@ -105,6 +115,8 @@ void UpdateLateralMovementIntent(GameState *game_state) {
 }
 
 void MaybeMovePieceLaterally(GameState *game_state) {
+  printf("MaybeMovePieceLaterally game_state->lateral_movement_counter: %d\n",
+         game_state->lateral_movement_counter);
   if (game_state->lateral_movement_counter >= LATERAL_MOVEMENT_DELAY) {
     if (game_state->lateral_movement_repeating) {
       game_state->lateral_movement_counter =
@@ -127,6 +139,8 @@ void MaybeMovePieceLaterally(GameState *game_state) {
 }
 
 void UpdateRotationIntent(GameState *game_state) {
+  printf("UpdateRotationIntent game_state->rotation_counter: %d\n",
+         game_state->rotation_counter);
   game_state->rotation_counter++;
   int new_direction = 0;
   if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
@@ -144,6 +158,8 @@ void UpdateRotationIntent(GameState *game_state) {
 }
 
 void MaybeRotatePiece(GameState *game_state) {
+  printf("MaybeRotatePiece game_state->rotation_counter: %d\n",
+         game_state->rotation_counter);
   if (game_state->rotation_counter < ROTATION_DELAY) {
     return;
   }
@@ -173,7 +189,7 @@ void MaybeRotatePiece(GameState *game_state) {
       printf("test_row is %d + %d = %d\n", game_state->active_piece_row,
              row_delta, test_row);
       printf("test_col is %d + %d = %d\n", game_state->active_piece_col,
-              col_delta, test_col);
+             col_delta, test_col);
       if (!TestPieceCollision(game_state, test_piece, test_row, test_col)) {
         game_state->active_piece_rotation = test_rotation;
         for (int i = 0; i < 4; i++) {
@@ -193,6 +209,8 @@ void MaybeRotatePiece(GameState *game_state) {
 }
 
 void MaybeApplyGravity(GameState *game_state) {
+  printf("MaybeApplyGravity game_state->gravity_counter: %d\n",
+         game_state->gravity_counter);
   game_state->gravity_counter++;
   int gravity_delay = IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN)
                           ? game_state->soft_drop_delay
@@ -206,4 +224,91 @@ void MaybeApplyGravity(GameState *game_state) {
       printf("gravity can't move piece down\n");
     }
   }
+}
+
+void MaybeHardDrop(GameState *game_state) {
+  printf("MaybeHardDrop game_state->hard_dropped: %d\n",
+         game_state->hard_dropped);
+  if (!IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
+    game_state->hard_dropped = false;
+  }
+  if (game_state->hard_dropped) {
+    // Don't hard drop a second piece without first releasing the button
+    return;
+  }
+  if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT) ||
+        IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
+      // Don't risk accidental hard drop with diagonal input
+      return;
+    }
+    game_state->active_piece_row = game_state->ghost_piece_row;
+    game_state->hard_dropped = true;
+    LockPiece(game_state);
+  } else {
+    game_state->hard_dropped = false;
+  }
+}
+
+void UpdateGhostPieceRow(GameState *game_state) {
+  printf("UpdateGhostPieceRow\n");
+  game_state->ghost_piece_row = game_state->active_piece_row;
+  while (!TestActivePieceCollision(game_state, game_state->ghost_piece_row + 1,
+                                   game_state->active_piece_col)) {
+    assert(game_state->ghost_piece_row < PLAYFIELD_HEIGHT + 5);                                    
+    game_state->ghost_piece_row++;
+  }
+}
+
+void LockPiece(GameState *game_state) { game_state->locking_piece = true; }
+
+void UpdateLockingPiece(GameState *game_state) {
+  game_state->lock_counter++;
+  if (game_state->lock_counter >= ENTRY_DELAY) {
+    game_state->lock_counter = 0;
+    game_state->locking_piece = false;
+  }
+}
+
+void SpawnNewPiece(GameState *game_state) {
+  printf("SpawnNewPiece\n");
+  for (int piece_row = 0; piece_row < 4; piece_row++) {
+    for (int piece_col = 0; piece_col < 4; piece_col++) {
+      const int active_piece_square =
+          game_state->active_piece[piece_row][piece_col];
+      if (active_piece_square == EMPTY_SQUARE) {
+        continue;
+      }
+      const int playfield_row = game_state->active_piece_row + piece_row;
+      const int playfield_col = game_state->active_piece_col + piece_col;
+      const int placed_square =
+          (active_piece_square & ~ACTIVE_MASK) | PLACED_MASK;
+      assert(playfield_row >= 0 && playfield_row < PLAYFIELD_HEIGHT);
+      assert(playfield_col >= 0 && playfield_col < PLAYFIELD_WIDTH);
+      game_state->squares[playfield_row][playfield_col] = placed_square;
+    }
+  }
+  game_state->pieces_until_redraw--;
+  for (int i = 0; i < 13; i++) {
+    game_state->piece_queue[i] = game_state->piece_queue[i + 1];
+  }
+  if (game_state->pieces_until_redraw == 0) {
+    DrawRandomPieces(game_state->piece_queue, 6);
+    game_state->pieces_until_redraw = 7;
+  }
+  // We must have at least 7 known pieces to fill the next queue.
+  for (int i = 0; i < 7; i++) {
+    assert(game_state->piece_queue[i] >= 1 &&
+           game_state->piece_queue[i] <= 7);
+  }
+  game_state->active_piece_index = game_state->piece_queue[0];
+  assert(game_state->active_piece_index >= 1 &&
+         game_state->active_piece_index <= 7);
+  game_state->active_piece_rotation = ROTATION_0;
+  CreatePiece(game_state->active_piece_index, game_state->active_piece,
+              ROTATION_0);
+  game_state->active_piece_row = 0;
+  game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
+
+  game_state->gravity_counter = 0;
 }

@@ -14,10 +14,11 @@ int main(void) {
 
   InitWindow(screenWidth, screenHeight, "kvadrat");
 
-  Font font = LoadFont("Futura-Medium-01.ttf");
+  Font ui_font = LoadFont("Futura-Medium-01.ttf");
+  Font wordgame_font = LoadFont("FranklinGothic.ttf");
+
   SetTargetFPS(60);
   GameState *game_state = CreateInitialGameState();
-
 
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -25,20 +26,38 @@ int main(void) {
     ClearBackground(GRAY);
 
     UpdateLateralMovementIntent(game_state);
-    MaybeMovePieceLaterally(game_state);
 
-    UpdateRotationIntent(game_state);
-    MaybeRotatePiece(game_state);
+    if (game_state->locking_piece) {
+      printf("locking piece\n");
+      UpdateLockingPiece(game_state);
+      if (!game_state->locking_piece) {
+        printf("done locking piece\n");
+        SpawnNewPiece(game_state);
+      }
+    }
 
-    MaybeApplyGravity(game_state);
+    if (!game_state->locking_piece) {
+      printf("not locking piece\n");
+      MaybeMovePieceLaterally(game_state);
 
+      UpdateRotationIntent(game_state);
+      MaybeRotatePiece(game_state);
+
+      MaybeApplyGravity(game_state);
+
+      UpdateGhostPieceRow(game_state);
+      MaybeHardDrop(game_state);
+    }
+    printf("ready to update playfield for display\n");
     Playfield *playfield = CreateInitialPlayfield();
+    CopyPlacedSquaresToPlayfield(game_state, playfield);
     CopyActivePieceToPlayfield(game_state, playfield);
-    DisplayPlayfield(playfield);
+    CopyGhostPieceToPlayfield(game_state, playfield);
+    DisplayPlayfield(playfield, &wordgame_font);
     DestroyPlayfield(playfield);
 
-    DisplayNext(&font);
-    DisplayInputs(&font);
+    DisplayNext(&ui_font);
+    DisplayInputs(&ui_font);
 
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
