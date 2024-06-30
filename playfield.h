@@ -16,4 +16,6 @@ void DisplayPlayfield(const Playfield *playfield);
 
 void CopyActivePieceToPlayfield(const GameState *game_state, Playfield *playfield);
 
+void CopyGhostPieceToPlayfield(const GameState *game_state, Playfield *playfield);
+
 #endif // PLAYFIELD_H

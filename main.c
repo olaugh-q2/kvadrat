@@ -32,8 +32,12 @@ int main(void) {
 
     MaybeApplyGravity(game_state);
 
+    UpdateGhostPieceRow(game_state);
+    MaybeHardDrop(game_state);
+
     Playfield *playfield = CreateInitialPlayfield();
     CopyActivePieceToPlayfield(game_state, playfield);
+    CopyGhostPieceToPlayfield(game_state, playfield);
     DisplayPlayfield(playfield);
     DestroyPlayfield(playfield);
 

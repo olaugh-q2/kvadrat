@@ -27,7 +27,7 @@ void CopyActivePieceToPlayfield(const GameState *game_state,
                                 Playfield *playfield) {
   //assert(TestActivePieceCollision(game_state, game_state->active_piece_row,
   //                                game_state->active_piece_col) == false);
-  
+
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (game_state->active_piece[i][j] != EMPTY_SQUARE) {
@@ -36,7 +36,29 @@ void CopyActivePieceToPlayfield(const GameState *game_state,
                EMPTY_SQUARE);
         playfield->squares[game_state->active_piece_row + i]
                           [game_state->active_piece_col + j] =
-            game_state->active_piece[i][j];
+            game_state->active_piece[i][j] | ACTIVE_MASK;
+      }
+    }
+  }
+}
+
+void CopyGhostPieceToPlayfield(const GameState *game_state,
+                               Playfield *playfield) {
+  int ghost_piece_row = game_state->ghost_piece_row;
+  int ghost_piece_col = game_state->active_piece_col;
+
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (game_state->active_piece[i][j] != EMPTY_SQUARE) {
+        const int current_square = playfield->squares[ghost_piece_row + i]
+                                                     [ghost_piece_col + j];
+        assert(current_square == EMPTY_SQUARE ||
+               (current_square & ACTIVE_MASK));
+        if (current_square != EMPTY_SQUARE) {
+          continue;
+        }
+        playfield->squares[ghost_piece_row + i][ghost_piece_col + j] =
+            game_state->active_piece[i][j] | GHOST_MASK;
       }
     }
   }
@@ -75,8 +97,10 @@ void DisplayPlayfield(const Playfield *playfield) {
           break;
         }
       }
-
       DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, color);
+      if (square & GHOST_MASK) {
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.7f));
+      }
     }
   }
 }

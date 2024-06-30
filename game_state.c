@@ -32,8 +32,10 @@ GameState *CreateInitialGameState() {
 
   game_state->gravity_counter = 0;
   game_state->level = 1;
-  game_state->gravity_delay = 30000;
-  game_state->soft_drop_delay = 3;
+  game_state->gravity_delay = 20;
+  game_state->soft_drop_delay = 2;
+
+  game_state->hard_dropped = false;
 
   return game_state;
 }
@@ -49,8 +51,8 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
     bag[j] = temp;
   }
   for (int i = 0; i < 7; i++) {
-    piece_queue[start_index + i] = T_PIECE;
-    // piece_queue[start_index + i] = bag[i];
+    //piece_queue[start_index + i] = T_PIECE;
+    piece_queue[start_index + i] = bag[i];
   }
 }
 
@@ -205,5 +207,27 @@ void MaybeApplyGravity(GameState *game_state) {
     } else {
       printf("gravity can't move piece down\n");
     }
+  }
+}
+
+void MaybeHardDrop(GameState *game_state) {
+  if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
+    if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT) ||
+        IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
+      // Don't risk accidental hard drop with diagonal input
+      return;
+    }
+    game_state->active_piece_row = game_state->ghost_piece_row;
+    game_state->hard_dropped = true;
+  } else {
+    game_state->hard_dropped = false;
+  }
+}
+
+void UpdateGhostPieceRow(GameState *game_state) {
+  game_state->ghost_piece_row = game_state->active_piece_row;
+  while (!TestActivePieceCollision(game_state, game_state->ghost_piece_row + 1,
+                                   game_state->active_piece_col)) {
+    game_state->ghost_piece_row++;
   }
 }

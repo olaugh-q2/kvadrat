@@ -12,6 +12,7 @@ typedef struct {
   int piece_queue[14];
   int active_piece_row;
   int active_piece_col;
+  int ghost_piece_row;
   int active_piece_rotation;
   int active_piece_index;
   int pieces_until_redraw;
@@ -27,6 +28,8 @@ typedef struct {
   int level;
   int soft_drop_delay;
   int gravity_delay;
+
+  bool hard_dropped;
 
 } GameState;
 
@@ -47,5 +50,9 @@ void UpdateRotationIntent(GameState *game_state);
 void MaybeRotatePiece(GameState *game_state);
 
 void MaybeApplyGravity(GameState *game_state);
+
+void MaybeHardDrop(GameState *game_state);
+
+void UpdateGhostPieceRow(GameState *game_state);
 
 #endif // GAME_STATE_H
