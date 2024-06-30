@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "raylib.h"
 
 #include "game_state.h"
@@ -5,6 +6,7 @@
 #include "next.h"
 #include "playfield.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,6 +29,17 @@ int main(void) {
 
     UpdateLateralMovementIntent(game_state);
 
+    if (game_state->soft_locking) { 
+      printf("soft locking\n");
+      game_state->soft_lock_counter++;
+      if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
+        game_state->soft_locking = false;
+        game_state->soft_lock_counter = 0;
+        assert(game_state->active_piece_row == game_state->ghost_piece_row);
+        LockPiece(game_state);
+      }
+    }
+
     if (game_state->locking_piece) {
       printf("locking piece\n");
       UpdateLockingPiece(game_state);
@@ -43,9 +56,10 @@ int main(void) {
       UpdateRotationIntent(game_state);
       MaybeRotatePiece(game_state);
 
-      MaybeApplyGravity(game_state);
 
       UpdateGhostPieceRow(game_state);
+      MaybeApplyGravity(game_state);
+      
       MaybeHardDrop(game_state);
     }
     printf("ready to update playfield for display\n");

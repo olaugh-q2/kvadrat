@@ -32,6 +32,7 @@ typedef struct {
   bool hard_dropped;
 
   int soft_lock_counter;
+  bool soft_locking;
   int lock_counter;
   bool locking_piece;
 
