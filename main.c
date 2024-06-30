@@ -29,7 +29,7 @@ int main(void) {
 
     UpdateLateralMovementIntent(game_state);
 
-    if (game_state->soft_locking) { 
+    if (game_state->soft_locking) {
       printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
@@ -37,6 +37,8 @@ int main(void) {
         game_state->soft_lock_counter = 0;
         assert(game_state->active_piece_row == game_state->ghost_piece_row);
         LockPiece(game_state);
+        PlaceLockedPiece(game_state);
+        CheckForLineClears(game_state);
       }
     }
 
@@ -45,29 +47,48 @@ int main(void) {
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
         printf("done locking piece\n");
+        if (!game_state->clearing_lines) {
+          SpawnNewPiece(game_state);
+        }
+      }
+    }
+
+    if (game_state->clearing_lines) {
+      printf("clearing lines\n");
+      game_state->line_clear_counter++;
+      printf("line clear counter: %d\n", game_state->line_clear_counter);
+      if (game_state->line_clear_counter >= LINE_CLEAR_DELAY) {
+        game_state->line_clear_counter = 0;
+        game_state->clearing_lines = false;
+        UpdateAfterClearedLines(game_state);
         SpawnNewPiece(game_state);
       }
     }
 
-    if (!game_state->locking_piece) {
-      printf("not locking piece\n");
+    if (!game_state->clearing_lines && !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);
       MaybeRotatePiece(game_state);
 
-
       UpdateGhostPieceRow(game_state);
       MaybeApplyGravity(game_state);
-      
+
       MaybeHardDrop(game_state);
     }
-    printf("ready to update playfield for display\n");
+
+    // printf("ready to update playfield for display\n");
     Playfield *playfield = CreateInitialPlayfield();
     CopyPlacedSquaresToPlayfield(game_state, playfield);
-    CopyActivePieceToPlayfield(game_state, playfield);
-    CopyGhostPieceToPlayfield(game_state, playfield);
-    DisplayPlayfield(playfield, &wordgame_font);
+
+    // There is no active piece while clearing lines: the locked piece is now
+    // placed and there is a delay before spawning a new piece.
+    if (!game_state->locking_piece && !game_state->clearing_lines) {
+      CopyActivePieceToPlayfield(game_state, playfield);
+      CopyGhostPieceToPlayfield(game_state, playfield);
+    }
+
+    DisplayPlayfield(playfield, game_state, &wordgame_font);
     DestroyPlayfield(playfield);
 
     DisplayNext(&ui_font);

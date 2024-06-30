@@ -20,7 +20,7 @@
 #define COUNTERCLOCKWISE_DIRECTION (-1);
 
 #define COLOR_ACTIVE_I_PIECE CLITERAL(Color){0, 227, 251, 255}  // light blue
-#define COLOR_ACTIVE_J_PIECE CLITERAL(Color){36, 18, 247, 255}  // dark blue
+#define COLOR_ACTIVE_J_PIECE CLITERAL(Color){20, 20, 255, 255}  // dark blue
 #define COLOR_ACTIVE_L_PIECE CLITERAL(Color){255, 102, 34, 255} // orange
 #define COLOR_ACTIVE_O_PIECE CLITERAL(Color){255, 216, 53, 255} // yellow
 #define COLOR_ACTIVE_S_PIECE CLITERAL(Color){48, 253, 57, 255}  // green

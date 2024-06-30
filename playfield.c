@@ -40,8 +40,8 @@ void CopyPlacedSquaresToPlayfield(const GameState *game_state,
 
 void CopyActivePieceToPlayfield(const GameState *game_state,
                                 Playfield *playfield) {
-  //assert(TestActivePieceCollision(game_state, game_state->active_piece_row,
-  //                                game_state->active_piece_col) == false);
+  // assert(TestActivePieceCollision(game_state, game_state->active_piece_row,
+  //                                 game_state->active_piece_col) == false);
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -65,8 +65,8 @@ void CopyGhostPieceToPlayfield(const GameState *game_state,
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (game_state->active_piece[i][j] != EMPTY_SQUARE) {
-        const int current_square = playfield->squares[ghost_piece_row + i]
-                                                     [ghost_piece_col + j];
+        const int current_square =
+            playfield->squares[ghost_piece_row + i][ghost_piece_col + j];
         assert(current_square == EMPTY_SQUARE ||
                (current_square & ACTIVE_MASK));
         if (current_square != EMPTY_SQUARE) {
@@ -79,13 +79,21 @@ void CopyGhostPieceToPlayfield(const GameState *game_state,
   }
 }
 
-void DisplayPlayfield(const Playfield *playfield, const Font *font) {
+void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
+                      const Font *font) {
   DrawRectangle(300, 25, 200, 400, DARKGRAY);
 
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       Color color = BLACK;
       int square = playfield->squares[row][col];
+      if (game_state->cleared_lines[row]) {
+        if (game_state->line_clear_counter >= LINE_CLEAR_FLASH_DELAY) {
+          const int frames_since_flash = game_state->line_clear_counter -
+                                         LINE_CLEAR_FLASH_DELAY;
+          square = EMPTY_SQUARE;
+        }
+      }
       if (square != EMPTY_SQUARE) {
         const int piece_type = square & PIECE_MASK;
         switch (piece_type) {
@@ -116,25 +124,36 @@ void DisplayPlayfield(const Playfield *playfield, const Font *font) {
       if (square & GHOST_MASK) {
         assert((square & ACTIVE_MASK) == 0);
         assert((square & PLACED_MASK) == 0);
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.9f));
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(WHITE, 0.4f));
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+                      Fade(BLACK, 0.9f));
       }
       if (square & ACTIVE_MASK) {
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(LIGHTGRAY, 0.4f));
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(WHITE, 0.1f));
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+                      Fade(LIGHTGRAY, 0.4f));
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+                      Fade(WHITE, 0.1f));
       }
       if (square & PLACED_MASK) {
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(LIGHTGRAY, 0.5f));
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.1f));
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+                      Fade(LIGHTGRAY, 0.5f));
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+                      Fade(BLACK, 0.1f));
       }
-
-/*
-      char text[2] = "A";
-      text[0] += rand() % 26;
-      Vector2 text_size = MeasureTextEx(*font, text, 12, 1);
-      DrawTextEx(*font, text, (Vector2){301 + col * 20 + 9 - text_size.x / 2,
-                                        26 + row * 20 + 9 - text_size.y / 2},
-                 10, 1, Fade(BLACK, 0.8f));
-*/                 
+      /*
+            char text[2] = "A";
+            text[0] += rand() % 26;
+            Vector2 text_size = MeasureTextEx(*font, text, 12, 1);
+            DrawTextEx(*font, text, (Vector2){301 + col * 20 + 9 - text_size.x /
+         2, 26 + row * 20 + 9 - text_size.y / 2}, 10, 1, Fade(BLACK, 0.8f));
+      */
+    }
+    if (game_state->cleared_lines[row]) {
+      if (game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY) {
+        const float flash_alpha = 1.0f * game_state->line_clear_counter /
+                                  LINE_CLEAR_FLASH_DELAY;
+        DrawRectangle(300, 26 + row * 20, 200, 20, Fade(WHITE, flash_alpha));
+      }
     }
   }
 }
