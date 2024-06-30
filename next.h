@@ -3,6 +3,8 @@
 
 #include "raylib.h"
 
-void DisplayNext(const Font *font);
+#include "game_state.h"
+
+void DisplayNext(const GameState *game_state, const Font *font);
 
 #endif // NEXT_H

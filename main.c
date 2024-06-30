@@ -91,7 +91,7 @@ int main(void) {
     DisplayPlayfield(playfield, game_state, &wordgame_font);
     DestroyPlayfield(playfield);
 
-    DisplayNext(&ui_font);
+    DisplayNext(game_state, &ui_font);
     DisplayInputs(&ui_font);
 
     char *fpsText = NULL;
