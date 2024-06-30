@@ -133,6 +133,8 @@ void MaybeMovePieceLaterally(GameState *game_state) {
         printf("successfully moved piece from column %d to %d\n",
                game_state->active_piece_col, test_column);
         game_state->active_piece_col = test_column;
+        game_state->soft_lock_counter = 0;
+        game_state->soft_locking = false;
       }
     }
   }
@@ -201,6 +203,8 @@ void MaybeRotatePiece(GameState *game_state) {
         game_state->active_piece_col = test_col;
         game_state->rotation_counter = 0;
         printf("successful rotation to %d\n", test_rotation);
+        game_state->soft_lock_counter = 0;
+        game_state->soft_locking = false;
         return;
       }
       printf("collision!\n");
@@ -222,6 +226,7 @@ void MaybeApplyGravity(GameState *game_state) {
       game_state->active_piece_row++;
     } else {
       printf("gravity can't move piece down\n");
+      game_state->soft_locking = true;
     }
   }
 }
@@ -255,7 +260,7 @@ void UpdateGhostPieceRow(GameState *game_state) {
   game_state->ghost_piece_row = game_state->active_piece_row;
   while (!TestActivePieceCollision(game_state, game_state->ghost_piece_row + 1,
                                    game_state->active_piece_col)) {
-    assert(game_state->ghost_piece_row < PLAYFIELD_HEIGHT + 5);                                    
+    assert(game_state->ghost_piece_row < PLAYFIELD_HEIGHT + 5);
     game_state->ghost_piece_row++;
   }
 }
@@ -271,6 +276,10 @@ void UpdateLockingPiece(GameState *game_state) {
 }
 
 void SpawnNewPiece(GameState *game_state) {
+  // Unclear why this is needed here, main.c game loop already does this.
+  game_state->soft_locking = false;
+  game_state->soft_lock_counter = 0;
+
   printf("SpawnNewPiece\n");
   for (int piece_row = 0; piece_row < 4; piece_row++) {
     for (int piece_col = 0; piece_col < 4; piece_col++) {
@@ -298,8 +307,7 @@ void SpawnNewPiece(GameState *game_state) {
   }
   // We must have at least 7 known pieces to fill the next queue.
   for (int i = 0; i < 7; i++) {
-    assert(game_state->piece_queue[i] >= 1 &&
-           game_state->piece_queue[i] <= 7);
+    assert(game_state->piece_queue[i] >= 1 && game_state->piece_queue[i] <= 7);
   }
   game_state->active_piece_index = game_state->piece_queue[0];
   assert(game_state->active_piece_index >= 1 &&
