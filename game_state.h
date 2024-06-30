@@ -36,6 +36,10 @@ typedef struct {
   int lock_counter;
   bool locking_piece;
 
+  int line_clear_counter;
+  bool clearing_lines;
+
+  bool cleared_lines[PLAYFIELD_HEIGHT];
 } GameState;
 
 GameState *CreateInitialGameState();
@@ -64,6 +68,12 @@ void UpdateGhostPieceRow(GameState *game_state);
 
 void UpdateLockingPiece(GameState *game_state);
 
+void PlaceLockedPiece(GameState *game_state);
+
 void SpawnNewPiece(GameState *game_state);
+
+void CheckForLineClears(GameState *game_state);
+
+void UpdateAfterClearedLines(GameState *game_state);
 
 #endif // GAME_STATE_H

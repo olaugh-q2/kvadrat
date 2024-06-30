@@ -14,7 +14,7 @@ Playfield *CreateInitialPlayfield();
 
 void DestroyPlayfield(Playfield *playfield);
 
-void DisplayPlayfield(const Playfield *playfield, const Font *font);
+void DisplayPlayfield(const Playfield *playfield, const GameState *game_state, const Font *font);
 
 void CopyPlacedSquaresToPlayfield(const GameState *game_state, Playfield *playfield);
 
