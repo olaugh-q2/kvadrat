@@ -23,6 +23,21 @@ Playfield *CreateInitialPlayfield() {
 
 void DestroyPlayfield(Playfield *playfield) { free(playfield); }
 
+void CopyPlacedSquaresToPlayfield(const GameState *game_state,
+                                  Playfield *playfield) {
+  for (int i = 0; i < PLAYFIELD_HEIGHT; i++) {
+    for (int j = 0; j < PLAYFIELD_WIDTH; j++) {
+      if (game_state->squares[i][j] != EMPTY_SQUARE) {
+        assert(playfield->squares[i][j] == EMPTY_SQUARE);
+        assert((game_state->squares[i][j] & ACTIVE_MASK) == 0);
+        assert((game_state->squares[i][j] & GHOST_MASK) == 0);
+        assert(game_state->squares[i][j] & PLACED_MASK);
+        playfield->squares[i][j] = game_state->squares[i][j];
+      }
+    }
+  }
+}
+
 void CopyActivePieceToPlayfield(const GameState *game_state,
                                 Playfield *playfield) {
   //assert(TestActivePieceCollision(game_state, game_state->active_piece_row,
@@ -58,13 +73,13 @@ void CopyGhostPieceToPlayfield(const GameState *game_state,
           continue;
         }
         playfield->squares[ghost_piece_row + i][ghost_piece_col + j] =
-            game_state->active_piece[i][j] | GHOST_MASK;
+            (game_state->active_piece[i][j] | GHOST_MASK) & (~ACTIVE_MASK);
       }
     }
   }
 }
 
-void DisplayPlayfield(const Playfield *playfield) {
+void DisplayPlayfield(const Playfield *playfield, const Font *font) {
   DrawRectangle(300, 25, 200, 400, DARKGRAY);
 
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
@@ -99,8 +114,27 @@ void DisplayPlayfield(const Playfield *playfield) {
       }
       DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, color);
       if (square & GHOST_MASK) {
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.7f));
+        assert((square & ACTIVE_MASK) == 0);
+        assert((square & PLACED_MASK) == 0);
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.9f));
       }
+      if (square & ACTIVE_MASK) {
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(LIGHTGRAY, 0.4f));
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(WHITE, 0.1f));
+      }
+      if (square & PLACED_MASK) {
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(LIGHTGRAY, 0.5f));
+        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14, Fade(BLACK, 0.1f));
+      }
+
+/*
+      char text[2] = "A";
+      text[0] += rand() % 26;
+      Vector2 text_size = MeasureTextEx(*font, text, 12, 1);
+      DrawTextEx(*font, text, (Vector2){301 + col * 20 + 9 - text_size.x / 2,
+                                        26 + row * 20 + 9 - text_size.y / 2},
+                 10, 1, Fade(BLACK, 0.8f));
+*/                 
     }
   }
 }

@@ -31,6 +31,10 @@ typedef struct {
 
   bool hard_dropped;
 
+  int soft_lock_counter;
+  int lock_counter;
+  bool locking_piece;
+
 } GameState;
 
 GameState *CreateInitialGameState();
@@ -53,6 +57,12 @@ void MaybeApplyGravity(GameState *game_state);
 
 void MaybeHardDrop(GameState *game_state);
 
+void LockPiece(GameState *game_state);
+
 void UpdateGhostPieceRow(GameState *game_state);
+
+void UpdateLockingPiece(GameState *game_state);
+
+void SpawnNewPiece(GameState *game_state);
 
 #endif // GAME_STATE_H

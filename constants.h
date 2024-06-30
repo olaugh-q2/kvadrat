@@ -9,4 +9,7 @@
 
 #define ROTATION_DELAY 30
 
+#define SOFT_LOCK_DELAY 30
+#define ENTRY_DELAY 6
+
 #endif // CONSTANTS_H

@@ -1,6 +1,8 @@
 #ifndef PLAYFIELD_H
 #define PLAYFIELD_H
 
+#include "raylib.h"
+
 #include "constants.h"
 #include "game_state.h"
 
@@ -12,7 +14,9 @@ Playfield *CreateInitialPlayfield();
 
 void DestroyPlayfield(Playfield *playfield);
 
-void DisplayPlayfield(const Playfield *playfield);
+void DisplayPlayfield(const Playfield *playfield, const Font *font);
+
+void CopyPlacedSquaresToPlayfield(const GameState *game_state, Playfield *playfield);
 
 void CopyActivePieceToPlayfield(const GameState *game_state, Playfield *playfield);
 
