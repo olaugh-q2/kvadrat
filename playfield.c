@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "game_state.h"
 #include "raylib.h"
 
 #include "playfield.h"
@@ -24,14 +25,17 @@ void DestroyPlayfield(Playfield *playfield) { free(playfield); }
 
 void CopyActivePieceToPlayfield(const GameState *game_state,
                                 Playfield *playfield) {
+  //assert(TestActivePieceCollision(game_state, game_state->active_piece_row,
+  //                                game_state->active_piece_col) == false);
+  
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (game_state->active_piece[i][j] != EMPTY_SQUARE) {
         assert(playfield->squares[game_state->active_piece_row + i]
-                                 [game_state->active_piece_column + j] ==
+                                 [game_state->active_piece_col + j] ==
                EMPTY_SQUARE);
         playfield->squares[game_state->active_piece_row + i]
-                          [game_state->active_piece_column + j] =
+                          [game_state->active_piece_col + j] =
             game_state->active_piece[i][j];
       }
     }

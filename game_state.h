@@ -11,7 +11,7 @@ typedef struct {
   int active_piece[4][4];
   int piece_queue[14];
   int active_piece_row;
-  int active_piece_column;
+  int active_piece_col;
   int active_piece_rotation;
   int active_piece_index;
   int pieces_until_redraw;
@@ -43,6 +43,8 @@ bool TestActivePieceCollision(const GameState *game_state, int row, int col);
 void MaybeMovePieceLaterally(GameState *game_state);
 
 void UpdateRotationIntent(GameState *game_state);
+
+void MaybeRotatePiece(GameState *game_state);
 
 void MaybeApplyGravity(GameState *game_state);
 

@@ -28,7 +28,8 @@ int main(void) {
     MaybeMovePieceLaterally(game_state);
 
     UpdateRotationIntent(game_state);
-    
+    MaybeRotatePiece(game_state);
+
     MaybeApplyGravity(game_state);
 
     Playfield *playfield = CreateInitialPlayfield();
