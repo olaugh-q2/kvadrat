@@ -39,6 +39,7 @@ int main(void) {
         game_state->soft_locking = false;
         game_state->soft_lock_counter = 0;
         assert(game_state->active_piece_row == game_state->ghost_piece_row);
+        PlaySound(game_state->soft_drop_sound);
         LockPiece(game_state);
         PlaceLockedPiece(game_state);
         CheckForLineClears(game_state);

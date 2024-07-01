@@ -33,8 +33,8 @@ GameState *CreateInitialGameState() {
 
   game_state->gravity_counter = 0;
   game_state->level = 1;
-  game_state->gravity_delay = 20;
-  game_state->soft_drop_delay = 2;
+  game_state->gravity_delay = 12;
+  game_state->soft_drop_delay = 1;
 
   game_state->hard_dropped = false;
 
@@ -51,6 +51,7 @@ GameState *CreateInitialGameState() {
   }
 
   game_state->hard_drop_sound = LoadSound("harddrop.ogg");
+  game_state->soft_drop_sound = LoadSound("floor.ogg");
   game_state->line_clear_sound = LoadSound("clearline.mp3");
   game_state->quad_clear_sound = LoadSound("clearquad.mp3");
   game_state->rotate_sound = LoadSound("rotate.ogg");
@@ -67,6 +68,7 @@ GameState *CreateInitialGameState() {
 
 void DestroyGameState(GameState *game_state) {
   UnloadSound(game_state->hard_drop_sound);
+  UnloadSound(game_state->soft_drop_sound);
   UnloadSound(game_state->line_clear_sound);
   UnloadSound(game_state->quad_clear_sound);
   UnloadSound(game_state->rotate_sound);
