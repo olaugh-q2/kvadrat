@@ -1,6 +1,7 @@
 #ifndef GAME_STATE_H
 #define GAME_STATE_H
 
+#include "raylib.h"
 #include "constants.h"
 #include "square.h"
 
@@ -40,6 +41,14 @@ typedef struct {
   bool clearing_lines;
 
   bool cleared_lines[PLAYFIELD_HEIGHT];
+
+  Sound hard_drop_sound;
+  Sound line_clear_sound;
+  Sound quad_clear_sound;
+  Sound rotate_sound;
+  Wave move_wave;
+  Sound move_sounds[10];
+  int move_sound_index;
 } GameState;
 
 GameState *CreateInitialGameState();
