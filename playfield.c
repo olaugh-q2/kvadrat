@@ -89,8 +89,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
       int square = playfield->squares[row][col];
       if (game_state->cleared_lines[row]) {
         if (game_state->line_clear_counter >= LINE_CLEAR_FLASH_DELAY) {
-          const int frames_since_flash = game_state->line_clear_counter -
-                                         LINE_CLEAR_FLASH_DELAY;
+          const int frames_since_flash =
+              game_state->line_clear_counter - LINE_CLEAR_FLASH_DELAY;
           square = EMPTY_SQUARE;
         }
       }
@@ -127,6 +127,14 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(WHITE, 0.4f));
         DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
                       Fade(BLACK, 0.9f));
+        const int ghost_distance =
+            game_state->ghost_piece_row - game_state->active_piece_row;
+        float ghost_alpha = 0.3f + (float)(ghost_distance) / (float)PLAYFIELD_HEIGHT;
+        if (ghost_alpha > 1.0f) {
+          ghost_alpha = 1.0f;
+        }
+        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+                      Fade(BLACK, 1.0 - ghost_alpha));
       }
       if (square & ACTIVE_MASK) {
         DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
@@ -150,8 +158,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
     }
     if (game_state->cleared_lines[row]) {
       if (game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY) {
-        const float flash_alpha = 1.0f * game_state->line_clear_counter /
-                                  LINE_CLEAR_FLASH_DELAY;
+        const float flash_alpha =
+            1.0f * game_state->line_clear_counter / LINE_CLEAR_FLASH_DELAY;
         DrawRectangle(300, 26 + row * 20, 200, 20, Fade(WHITE, flash_alpha));
       }
     }
