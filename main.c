@@ -39,6 +39,7 @@ int main(void) {
         game_state->soft_locking = false;
         game_state->soft_lock_counter = 0;
         assert(game_state->active_piece_row == game_state->ghost_piece_row);
+        PlaySound(game_state->soft_drop_sound);
         LockPiece(game_state);
         PlaceLockedPiece(game_state);
         CheckForLineClears(game_state);
@@ -94,7 +95,7 @@ int main(void) {
     DisplayPlayfield(playfield, game_state, &ui_font, &wordgame_font);
     DestroyPlayfield(playfield);
 
-    DisplayNext(game_state, &ui_font);
+    DisplayNext(game_state, &ui_font, &wordgame_font);
     DisplayInputs(&ui_font);
 
     char *fpsText = NULL;

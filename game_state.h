@@ -43,6 +43,7 @@ typedef struct {
   bool cleared_lines[PLAYFIELD_HEIGHT];
 
   Sound hard_drop_sound;
+  Sound soft_drop_sound;
   Sound line_clear_sound;
   Sound quad_clear_sound;
   Sound rotate_sound;

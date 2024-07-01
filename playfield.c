@@ -129,7 +129,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
                       Fade(BLACK, 0.9f));
         const int ghost_distance =
             game_state->ghost_piece_row - game_state->active_piece_row;
-        float ghost_alpha = 0.3f + (float)(ghost_distance) / (float)PLAYFIELD_HEIGHT;
+        float ghost_alpha =
+            0.3f + (float)(ghost_distance) / (float)PLAYFIELD_HEIGHT;
         if (ghost_alpha > 1.0f) {
           ghost_alpha = 1.0f;
         }
@@ -148,13 +149,27 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
                       Fade(BLACK, 0.1f));
       }
-      /*
-            char text[2] = "A";
-            text[0] += rand() % 26;
-            Vector2 text_size = MeasureTextEx(*font, text, 12, 1);
-            DrawTextEx(*font, text, (Vector2){301 + col * 20 + 9 - text_size.x /
-         2, 26 + row * 20 + 9 - text_size.y / 2}, 10, 1, Fade(BLACK, 0.8f));
-      */
+      const int ml = square >> 8;
+      if (ml != 0) {
+        char text[2] = "A";
+        text[0] += ml - 1;
+        Vector2 text_size = MeasureTextEx(*letter_font, text, 12, 1);
+        Color text_color = Fade(BLACK, 0.9);
+        if (square & GHOST_MASK) {
+          const int ghost_distance =
+              game_state->ghost_piece_row - game_state->active_piece_row;
+          float ghost_alpha =
+              0.3f + (float)(ghost_distance) / (float)PLAYFIELD_HEIGHT;
+          if (ghost_alpha > 1.0f) {
+            ghost_alpha = 1.0f;
+          }
+          text_color = Fade(color, ghost_alpha);
+        }
+        DrawTextEx(*letter_font, text,
+                   (Vector2){301 + col * 20 + 9 - text_size.x / 2,
+                             26 + row * 20 + 9 - text_size.y / 2},
+                   12, 1, text_color);
+      }
     }
     if (game_state->cleared_lines[row]) {
       if (game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY) {
@@ -167,9 +182,9 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
 
   if (game_state->paused) {
     DrawRectangle(300, 25, 200, 400, Fade(BLACK, 0.85f));
-    const char* paused_text = "PAUSED";
+    const char *paused_text = "PAUSED";
     Vector2 text_size = MeasureTextEx(*ui_font, paused_text, 24, 1);
-    DrawTextEx(*ui_font, paused_text, (Vector2){400-text_size.x/2, 180}, 24, 1.0,
-               GREEN);
+    DrawTextEx(*ui_font, paused_text, (Vector2){400 - text_size.x / 2, 180}, 24,
+               1.0, GREEN);
   }
 }

@@ -9,7 +9,7 @@
 
 #define ROTATION_DELAY 30
 
-#define SOFT_LOCK_DELAY 30
+#define SOFT_LOCK_DELAY 20
 #define ENTRY_DELAY 6
 
 #define LINE_CLEAR_DELAY 30
