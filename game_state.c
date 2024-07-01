@@ -49,10 +49,23 @@ GameState *CreateInitialGameState() {
   for (int i = 0; i < PLAYFIELD_HEIGHT; i++) {
     game_state->cleared_lines[i] = false;
   }
+
+  game_state->hard_drop_sound = LoadSound("harddrop.ogg");
+  game_state->line_clear_sound = LoadSound("clearline.mp3");
+  game_state->quad_clear_sound = LoadSound("clearquad.mp3");
+  game_state->rotate_sound = LoadSound("rotate.ogg");
+  game_state->move_sound = LoadSound("move.ogg");
   return game_state;
 }
 
-void DestroyGameState(GameState *game_state) { free(game_state); }
+void DestroyGameState(GameState *game_state) {
+  UnloadSound(game_state->hard_drop_sound);
+  UnloadSound(game_state->line_clear_sound);
+  UnloadSound(game_state->quad_clear_sound);
+  UnloadSound(game_state->rotate_sound);
+  UnloadSound(game_state->move_sound);
+  free(game_state);
+}
 
 void DrawRandomPieces(int piece_queue[14], int start_index) {
   int bag[] = {I_PIECE, J_PIECE, L_PIECE, O_PIECE, S_PIECE, T_PIECE, Z_PIECE};
@@ -81,17 +94,17 @@ bool TestPieceCollision(const GameState *game_state, const int piece[4][4],
             playfield_col < 0 || playfield_col >= PLAYFIELD_WIDTH ||
             game_state->squares[playfield_row][playfield_col] != EMPTY_SQUARE) {
           if ((playfield_row < 0) || playfield_row >= PLAYFIELD_HEIGHT) {
-            //printf("collision: row out of bounds: %d\n", playfield_row);
+            // printf("collision: row out of bounds: %d\n", playfield_row);
           }
           if ((playfield_col < 0) || playfield_col >= PLAYFIELD_WIDTH) {
-            //printf("collision: col out of bounds: %d\n", playfield_col);
+            // printf("collision: col out of bounds: %d\n", playfield_col);
           }
           if ((playfield_col >= 0) && (playfield_col < PLAYFIELD_WIDTH) &&
               (playfield_row >= 0) && (playfield_row < PLAYFIELD_HEIGHT) &&
               game_state->squares[playfield_row][playfield_col] !=
                   EMPTY_SQUARE) {
-            //printf("collision: square not empty: %d\n",
-            //       game_state->squares[playfield_row][playfield_col]);
+            // printf("collision: square not empty: %d\n",
+            //        game_state->squares[playfield_row][playfield_col]);
           }
           return true;
         }
@@ -102,7 +115,7 @@ bool TestPieceCollision(const GameState *game_state, const int piece[4][4],
 }
 
 bool TestActivePieceCollision(const GameState *game_state, int row, int col) {
-  //printf("TestActivePieceCollision row: %d, col: %d\n", row, col);
+  // printf("TestActivePieceCollision row: %d, col: %d\n", row, col);
   return TestPieceCollision(game_state, game_state->active_piece, row, col);
 }
 
@@ -122,8 +135,9 @@ void UpdateLateralMovementIntent(GameState *game_state) {
 }
 
 void MaybeMovePieceLaterally(GameState *game_state) {
-  //printf("MaybeMovePieceLaterally game_state->lateral_movement_counter: %d\n",
-  //       game_state->lateral_movement_counter);
+  // printf("MaybeMovePieceLaterally game_state->lateral_movement_counter:
+  // %d\n",
+  //        game_state->lateral_movement_counter);
   if (game_state->lateral_movement_counter >= LATERAL_MOVEMENT_DELAY) {
     if (game_state->lateral_movement_repeating) {
       game_state->lateral_movement_counter =
@@ -137,19 +151,21 @@ void MaybeMovePieceLaterally(GameState *game_state) {
           game_state->active_piece_col + game_state->lateral_movement_direction;
       if (!TestActivePieceCollision(game_state, game_state->active_piece_row,
                                     test_column)) {
-        //printf("successfully moved piece from column %d to %d\n",
-        //       game_state->active_piece_col, test_column);
+        // printf("successfully moved piece from column %d to %d\n",
+        //        game_state->active_piece_col, test_column);
         game_state->active_piece_col = test_column;
         game_state->soft_lock_counter = 0;
         game_state->soft_locking = false;
+        // Retriggers too quickly, change this to use aliases
+        //PlaySound(game_state->move_sound);
       }
     }
   }
 }
 
 void UpdateRotationIntent(GameState *game_state) {
-  //printf("UpdateRotationIntent game_state->rotation_counter: %d\n",
-  //       game_state->rotation_counter);
+  // printf("UpdateRotationIntent game_state->rotation_counter: %d\n",
+  //        game_state->rotation_counter);
   game_state->rotation_counter++;
   int new_direction = 0;
   if (IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
@@ -167,38 +183,39 @@ void UpdateRotationIntent(GameState *game_state) {
 }
 
 void MaybeRotatePiece(GameState *game_state) {
-  //printf("MaybeRotatePiece game_state->rotation_counter: %d\n",
-  //       game_state->rotation_counter);
+  // printf("MaybeRotatePiece game_state->rotation_counter: %d\n",
+  //        game_state->rotation_counter);
   if (game_state->rotation_counter < ROTATION_DELAY) {
     return;
   }
-  //printf("MaybeRotatePiece game_state->rotation_counter: %d\n",
-  //       game_state->rotation_counter);
+  // printf("MaybeRotatePiece game_state->rotation_counter: %d\n",
+  //        game_state->rotation_counter);
   if (game_state->rotation_direction != 0) {
-    //printf("MaybeRotatePiece game_state->rotation_direction: %d\n",
-    //       game_state->rotation_direction);
+    // printf("MaybeRotatePiece game_state->rotation_direction: %d\n",
+    //        game_state->rotation_direction);
     const int test_rotation = (game_state->active_piece_rotation +
                                game_state->rotation_direction + 4) %
                               4;
-    //printf("Testing rotation from %d to %d\n",
-    //       game_state->active_piece_rotation, test_rotation);
+    // printf("Testing rotation from %d to %d\n",
+    //        game_state->active_piece_rotation, test_rotation);
     int test_piece[4][4];
     CreatePiece(game_state->active_piece_index, test_piece, test_rotation);
     for (int test_index = 0; test_index <= 4; test_index++) {
-      //printf("MaybeRotatePiece test_index: %d\n", test_index);
+      // printf("MaybeRotatePiece test_index: %d\n", test_index);
       int row_delta;
       int col_delta;
       GetRotationOffsets(
           game_state->active_piece_index, game_state->active_piece_rotation,
           game_state->rotation_direction, test_index, &row_delta, &col_delta);
-      //printf("that would use offsets row_delta: %d, col_delta: %d\n", row_delta,
-      //       col_delta);
+      // printf("that would use offsets row_delta: %d, col_delta: %d\n",
+      // row_delta,
+      //        col_delta);
       const int test_row = game_state->active_piece_row + row_delta;
       const int test_col = game_state->active_piece_col + col_delta;
-      //printf("test_row is %d + %d = %d\n", game_state->active_piece_row,
-      //       row_delta, test_row);
-      //printf("test_col is %d + %d = %d\n", game_state->active_piece_col,
-      //       col_delta, test_col);
+      // printf("test_row is %d + %d = %d\n", game_state->active_piece_row,
+      //        row_delta, test_row);
+      // printf("test_col is %d + %d = %d\n", game_state->active_piece_col,
+      //        col_delta, test_col);
       if (!TestPieceCollision(game_state, test_piece, test_row, test_col)) {
         game_state->active_piece_rotation = test_rotation;
         for (int i = 0; i < 4; i++) {
@@ -209,19 +226,20 @@ void MaybeRotatePiece(GameState *game_state) {
         game_state->active_piece_row = test_row;
         game_state->active_piece_col = test_col;
         game_state->rotation_counter = 0;
-        //printf("successful rotation to %d\n", test_rotation);
+        // printf("successful rotation to %d\n", test_rotation);
         game_state->soft_lock_counter = 0;
         game_state->soft_locking = false;
+        PlaySound(game_state->rotate_sound);
         return;
       }
-      //printf("collision!\n");
+      // printf("collision!\n");
     }
   }
 }
 
 void MaybeApplyGravity(GameState *game_state) {
-  //printf("MaybeApplyGravity game_state->gravity_counter: %d\n",
-  //       game_state->gravity_counter);
+  // printf("MaybeApplyGravity game_state->gravity_counter: %d\n",
+  //        game_state->gravity_counter);
   game_state->gravity_counter++;
   int gravity_delay = IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN)
                           ? game_state->soft_drop_delay
@@ -232,7 +250,7 @@ void MaybeApplyGravity(GameState *game_state) {
                                   game_state->active_piece_col)) {
       game_state->active_piece_row++;
     } else {
-      //printf("gravity can't move piece down\n");
+      // printf("gravity can't move piece down\n");
       game_state->soft_locking = true;
     }
   }
@@ -256,6 +274,7 @@ void MaybeHardDrop(GameState *game_state) {
     }
     game_state->active_piece_row = game_state->ghost_piece_row;
     game_state->hard_dropped = true;
+    PlaySound(game_state->hard_drop_sound);
     LockPiece(game_state);
     PlaceLockedPiece(game_state);
     CheckForLineClears(game_state);
@@ -265,7 +284,7 @@ void MaybeHardDrop(GameState *game_state) {
 }
 
 void UpdateGhostPieceRow(GameState *game_state) {
-  //printf("UpdateGhostPieceRow\n");
+  // printf("UpdateGhostPieceRow\n");
   game_state->ghost_piece_row = game_state->active_piece_row;
   while (!TestActivePieceCollision(game_state, game_state->ghost_piece_row + 1,
                                    game_state->active_piece_col)) {
@@ -339,6 +358,7 @@ void SpawnNewPiece(GameState *game_state) {
 
 void CheckForLineClears(GameState *game_state) {
   printf("CheckForLineClears:");
+  int num_lines_cleared = 0;
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     bool line_clear = true;
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -351,6 +371,14 @@ void CheckForLineClears(GameState *game_state) {
       printf(" %d", row);
       game_state->cleared_lines[row] = true;
       game_state->clearing_lines = true;
+      num_lines_cleared++;
+    }
+  }
+  if (game_state->clearing_lines) {
+    if (num_lines_cleared == 4) {
+      PlaySound(game_state->quad_clear_sound);
+    } else {
+      PlaySound(game_state->line_clear_sound);
     }
   }
   printf("\n");

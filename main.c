@@ -15,6 +15,7 @@ int main(void) {
   const int screenHeight = 450;
 
   InitWindow(screenWidth, screenHeight, "kvadrat");
+  InitAudioDevice();
 
   Font ui_font = LoadFont("Futura-Medium-01.ttf");
   Font wordgame_font = LoadFont("FranklinGothic.ttf");
@@ -103,6 +104,7 @@ int main(void) {
   }
 
   CloseWindow();
+  CloseAudioDevice();
 
   DestroyGameState(game_state);
 
