@@ -59,6 +59,9 @@ GameState *CreateInitialGameState() {
     game_state->move_sounds[i] = LoadSoundFromWave(game_state->move_wave);
   }
   game_state->move_sound_index = 0;
+
+  game_state->paused = false;
+  game_state->pause_sound = LoadSound("pause.mp3");
   return game_state;
 }
 
@@ -71,6 +74,7 @@ void DestroyGameState(GameState *game_state) {
   for (int i = 0; i < 10; i++) {
     UnloadSound(game_state->move_sounds[i]);
   }
+  UnloadSound(game_state->pause_sound);
   free(game_state);
 }
 
@@ -85,6 +89,15 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
   for (int i = 0; i < 7; i++) {
     // piece_queue[start_index + i] = T_PIECE;
     piece_queue[start_index + i] = bag[i];
+  }
+}
+
+void CheckWhetherPaused(GameState *game_state) {
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
+    game_state->paused = !game_state->paused;
+    if (game_state->paused) {
+      PlaySound(game_state->pause_sound);
+    }
   }
 }
 

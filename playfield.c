@@ -80,7 +80,7 @@ void CopyGhostPieceToPlayfield(const GameState *game_state,
 }
 
 void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
-                      const Font *font) {
+                      const Font *ui_font, const Font *letter_font) {
   DrawRectangle(300, 25, 200, 400, DARKGRAY);
 
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
@@ -163,5 +163,13 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         DrawRectangle(300, 26 + row * 20, 200, 20, Fade(WHITE, flash_alpha));
       }
     }
+  }
+
+  if (game_state->paused) {
+    DrawRectangle(300, 25, 200, 400, Fade(BLACK, 0.85f));
+    const char* paused_text = "PAUSED";
+    Vector2 text_size = MeasureTextEx(*ui_font, paused_text, 24, 1);
+    DrawTextEx(*ui_font, paused_text, (Vector2){400-text_size.x/2, 180}, 24, 1.0,
+               GREEN);
   }
 }

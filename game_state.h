@@ -49,6 +49,9 @@ typedef struct {
   Wave move_wave;
   Sound move_sounds[10];
   int move_sound_index;
+
+  bool paused;
+  Sound pause_sound;
 } GameState;
 
 GameState *CreateInitialGameState();
@@ -56,6 +59,8 @@ GameState *CreateInitialGameState();
 void DestroyGameState(GameState *game_state);
 
 void DrawRandomPieces(int piece_queue[14], int start_index);
+
+void CheckWhetherPaused(GameState *game_state);
 
 void UpdateLateralMovementIntent(GameState *game_state);
 

@@ -30,7 +30,9 @@ int main(void) {
 
     UpdateLateralMovementIntent(game_state);
 
-    if (game_state->soft_locking) {
+    CheckWhetherPaused(game_state);
+
+    if (!game_state->paused && game_state->soft_locking) {
       printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
@@ -43,7 +45,7 @@ int main(void) {
       }
     }
 
-    if (game_state->locking_piece) {
+    if (!game_state->paused && game_state->locking_piece) {
       printf("locking piece\n");
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
@@ -54,7 +56,7 @@ int main(void) {
       }
     }
 
-    if (game_state->clearing_lines) {
+    if (!game_state->paused && game_state->clearing_lines) {
       printf("clearing lines\n");
       game_state->line_clear_counter++;
       printf("line clear counter: %d\n", game_state->line_clear_counter);
@@ -66,7 +68,7 @@ int main(void) {
       }
     }
 
-    if (!game_state->clearing_lines && !game_state->locking_piece) {
+    if (!game_state->paused && !game_state->clearing_lines && !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);
@@ -89,7 +91,7 @@ int main(void) {
       CopyGhostPieceToPlayfield(game_state, playfield);
     }
 
-    DisplayPlayfield(playfield, game_state, &wordgame_font);
+    DisplayPlayfield(playfield, game_state, &ui_font, &wordgame_font);
     DestroyPlayfield(playfield);
 
     DisplayNext(game_state, &ui_font);
