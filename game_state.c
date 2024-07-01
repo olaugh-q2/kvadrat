@@ -54,7 +54,11 @@ GameState *CreateInitialGameState() {
   game_state->line_clear_sound = LoadSound("clearline.mp3");
   game_state->quad_clear_sound = LoadSound("clearquad.mp3");
   game_state->rotate_sound = LoadSound("rotate.ogg");
-  game_state->move_sound = LoadSound("move.ogg");
+  game_state->move_wave = LoadWave("move.ogg");
+  for (int i = 0; i < 10; i++) {
+    game_state->move_sounds[i] = LoadSoundFromWave(game_state->move_wave);
+  }
+  game_state->move_sound_index = 0;
   return game_state;
 }
 
@@ -63,7 +67,10 @@ void DestroyGameState(GameState *game_state) {
   UnloadSound(game_state->line_clear_sound);
   UnloadSound(game_state->quad_clear_sound);
   UnloadSound(game_state->rotate_sound);
-  UnloadSound(game_state->move_sound);
+  UnloadWave(game_state->move_wave);
+  for (int i = 0; i < 10; i++) {
+    UnloadSound(game_state->move_sounds[i]);
+  }
   free(game_state);
 }
 
@@ -156,8 +163,14 @@ void MaybeMovePieceLaterally(GameState *game_state) {
         game_state->active_piece_col = test_column;
         game_state->soft_lock_counter = 0;
         game_state->soft_locking = false;
-        // Retriggers too quickly, change this to use aliases
-        //PlaySound(game_state->move_sound);
+        const float panning =
+            1.0f-((float)(game_state->active_piece_col + 1) / 9.0 - 0.5f);
+        SetSoundPan(game_state->move_sounds[game_state->move_sound_index],
+                    panning);
+        PlaySound(game_state->move_sounds[game_state->move_sound_index++]);
+        if (game_state->move_sound_index >= 10) {
+          game_state->move_sound_index = 0;
+        }
       }
     }
   }

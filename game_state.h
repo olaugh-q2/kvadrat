@@ -46,7 +46,9 @@ typedef struct {
   Sound line_clear_sound;
   Sound quad_clear_sound;
   Sound rotate_sound;
-  Sound move_sound;
+  Wave move_wave;
+  Sound move_sounds[10];
+  int move_sound_index;
 } GameState;
 
 GameState *CreateInitialGameState();
