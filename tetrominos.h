@@ -19,15 +19,15 @@
 #define CLOCKWISE_DIRECTION 1;
 #define COUNTERCLOCKWISE_DIRECTION (-1);
 
-#define COLOR_ACTIVE_I_PIECE CLITERAL(Color){0, 227, 251, 255}  // light blue
-#define COLOR_ACTIVE_J_PIECE CLITERAL(Color){20, 20, 255, 255}  // dark blue
+#define COLOR_ACTIVE_I_PIECE CLITERAL(Color){0, 230, 251, 255}  // light blue
+#define COLOR_ACTIVE_J_PIECE CLITERAL(Color){40, 30, 255, 255}  // dark blue
 #define COLOR_ACTIVE_L_PIECE CLITERAL(Color){255, 102, 34, 255} // orange
 #define COLOR_ACTIVE_O_PIECE CLITERAL(Color){255, 216, 53, 255} // yellow
 #define COLOR_ACTIVE_S_PIECE CLITERAL(Color){48, 253, 57, 255}  // green
 #define COLOR_ACTIVE_Z_PIECE CLITERAL(Color){255, 6, 56, 255}   // red
 #define COLOR_ACTIVE_T_PIECE CLITERAL(Color){186, 14, 245, 255} // magenta
 
-void CreatePiece(int piece_index, int piece[4][4], int rotation);
+void CreatePiece(int piece_index, int piece[4][4], int rotation, int letters[4]);
 
 int SpawnColumn(int piece_index);
 

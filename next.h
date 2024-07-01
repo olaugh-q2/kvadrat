@@ -5,6 +5,6 @@
 
 #include "game_state.h"
 
-void DisplayNext(const GameState *game_state, const Font *font);
+void DisplayNext(const GameState *game_state, const Font *ui_font,const Font *letter_font);
 
 #endif // NEXT_H

@@ -18,8 +18,9 @@ GameState *CreateInitialGameState() {
   DrawRandomPieces(game_state->piece_queue, 0);
   game_state->active_piece_index = game_state->piece_queue[0];
   game_state->active_piece_rotation = ROTATION_0;
+  int letters[4] = {1, 2, 3, 4};
   CreatePiece(game_state->active_piece_index, game_state->active_piece,
-              ROTATION_0);
+              ROTATION_0, letters);
   game_state->active_piece_row = 0;
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
   game_state->pieces_until_redraw = 1;
@@ -58,6 +59,7 @@ GameState *CreateInitialGameState() {
   game_state->move_wave = LoadWave("move.ogg");
   for (int i = 0; i < 10; i++) {
     game_state->move_sounds[i] = LoadSoundFromWave(game_state->move_wave);
+    SetSoundVolume(game_state->move_sounds[i], 0.4f);
   }
   game_state->move_sound_index = 0;
 
@@ -227,7 +229,8 @@ void MaybeRotatePiece(GameState *game_state) {
     // printf("Testing rotation from %d to %d\n",
     //        game_state->active_piece_rotation, test_rotation);
     int test_piece[4][4];
-    CreatePiece(game_state->active_piece_index, test_piece, test_rotation);
+    int letters[4] = {1, 2, 3, 4};
+    CreatePiece(game_state->active_piece_index, test_piece, test_rotation, letters);
     for (int test_index = 0; test_index <= 4; test_index++) {
       // printf("MaybeRotatePiece test_index: %d\n", test_index);
       int row_delta;
@@ -376,8 +379,9 @@ void SpawnNewPiece(GameState *game_state) {
   assert(game_state->active_piece_index >= 1 &&
          game_state->active_piece_index <= 7);
   game_state->active_piece_rotation = ROTATION_0;
+  int letters[4] = {1, 2, 3, 4};
   CreatePiece(game_state->active_piece_index, game_state->active_piece,
-              ROTATION_0);
+              ROTATION_0, letters);
   game_state->active_piece_row = 0;
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
 

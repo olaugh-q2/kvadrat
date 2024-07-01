@@ -36,9 +36,17 @@ add_executable(main "main.c" "constants.h" "game_state.h" "game_state.c"
 add_executable(word_bag_maker "word_bag_maker.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
                "string_util.h" "string_util.c" "util.h" "util.c" "bag.h")
 
+add_executable(permutation_evaluator "permutation_evaluator.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
+               "string_util.h" "string_util.c" "util.h" "util.c" "bag.h" "tetrominos.h" "tetrominos.c" "playfield.h" "playfield.c" "square.h")               
+
 #Link raylib to main
 target_link_libraries(main 
     raylib
 )
+
+target_link_libraries(permutation_evaluator 
+    raylib
+)
+
 #Make main find the <raylib.h> header (and others)
 target_include_directories(main PUBLIC "${raylib_SOURCE_DIR}/src")
