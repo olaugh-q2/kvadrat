@@ -8,8 +8,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GameState *CreateInitialGameState() {
+GameState *CreateInitialGameState(const char *bags_filename) {
   GameState *game_state = (GameState *)malloc(sizeof(GameState));
+  LoadBags(game_state, bags_filename);
+  DrawWordsFromBag(game_state, 0);
+  game_state->words_until_redraw = 1;
   for (int i = 0; i < PLAYFIELD_HEIGHT; i++) {
     for (int j = 0; j < PLAYFIELD_WIDTH; j++) {
       game_state->squares[i][j] = EMPTY_SQUARE;
@@ -18,7 +21,10 @@ GameState *CreateInitialGameState() {
   DrawRandomPieces(game_state->piece_queue, 0);
   game_state->active_piece_index = game_state->piece_queue[0];
   game_state->active_piece_rotation = ROTATION_0;
-  int letters[4] = {1, 2, 3, 4};
+  int letters[4];
+  for (int i = 0; i < 4; i++) {
+    letters[i] = game_state->word_letters[0][i];
+  }
   CreatePiece(game_state->active_piece_index, game_state->active_piece,
               ROTATION_0, letters);
   game_state->active_piece_row = 0;
@@ -80,6 +86,34 @@ void DestroyGameState(GameState *game_state) {
   }
   UnloadSound(game_state->pause_sound);
   free(game_state);
+
+  free(game_state->bags);
+}
+
+void LoadBags(GameState *game_state, const char *filename) {
+  FILE *file = fopen(filename, "r");
+  if (file == NULL) {
+    fprintf(stderr, "Failed to open file %s\n", filename);
+    exit(1);
+  }
+  fseek(file, 0, SEEK_END);
+  long file_size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+  game_state->bags = (char *)malloc(file_size);
+  fread(game_state->bags, 1, file_size, file);
+  fclose(file);
+  game_state->num_bags = file_size / (28 * 5 + 1);
+}
+
+void DrawWordsFromBag(GameState *game_state, int start_index) {
+  const int bag_index = rand() % game_state->num_bags;
+  for (int i = 0; i < 28; i++) {
+    for (int j = 0; j < 4; j++) {
+      game_state->word_letters[start_index + i][j] =
+          game_state->bags[bag_index * (28 * 5 + 1) + i * 5 + j] - 'A' + 1;
+    }
+  }
+  // TODO: shuffle
 }
 
 void DrawRandomPieces(int piece_queue[14], int start_index) {
@@ -91,7 +125,6 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
     bag[j] = temp;
   }
   for (int i = 0; i < 7; i++) {
-    // piece_queue[start_index + i] = T_PIECE;
     piece_queue[start_index + i] = bag[i];
   }
 }
@@ -229,7 +262,10 @@ void MaybeRotatePiece(GameState *game_state) {
     // printf("Testing rotation from %d to %d\n",
     //        game_state->active_piece_rotation, test_rotation);
     int test_piece[4][4];
-    int letters[4] = {1, 2, 3, 4};
+    int letters[4];
+    for (int i = 0; i < 4; i++) {
+      letters[i] = game_state->word_letters[0][i];
+    }
     CreatePiece(game_state->active_piece_index, test_piece, test_rotation, letters);
     for (int test_index = 0; test_index <= 4; test_index++) {
       // printf("MaybeRotatePiece test_index: %d\n", test_index);
@@ -288,8 +324,8 @@ void MaybeApplyGravity(GameState *game_state) {
 }
 
 void MaybeHardDrop(GameState *game_state) {
-  printf("MaybeHardDrop game_state->hard_dropped: %d\n",
-         game_state->hard_dropped);
+  //printf("MaybeHardDrop game_state->hard_dropped: %d\n",
+  //       game_state->hard_dropped);
   if (!IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
     game_state->hard_dropped = false;
   }
@@ -361,8 +397,18 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->soft_locking = false;
   game_state->soft_lock_counter = 0;
 
-  printf("SpawnNewPiece\n");
+  //printf("SpawnNewPiece\n");
 
+  game_state->words_until_redraw--;
+  for (int i = 0; i < 56; i++) {
+    for (int j = 0; j < 4; j++) {
+      game_state->word_letters[i][j] = game_state->word_letters[i + 1][j];
+    }
+  }
+  if (game_state->words_until_redraw == 0) {
+    DrawWordsFromBag(game_state, 27);
+    game_state->words_until_redraw = 28;
+  }
   game_state->pieces_until_redraw--;
   for (int i = 0; i < 13; i++) {
     game_state->piece_queue[i] = game_state->piece_queue[i + 1];
@@ -379,7 +425,10 @@ void SpawnNewPiece(GameState *game_state) {
   assert(game_state->active_piece_index >= 1 &&
          game_state->active_piece_index <= 7);
   game_state->active_piece_rotation = ROTATION_0;
-  int letters[4] = {1, 2, 3, 4};
+  int letters[4];
+  for (int i = 0; i < 4; i++) {
+    letters[i] = game_state->word_letters[0][i];
+  }
   CreatePiece(game_state->active_piece_index, game_state->active_piece,
               ROTATION_0, letters);
   game_state->active_piece_row = 0;
@@ -389,7 +438,7 @@ void SpawnNewPiece(GameState *game_state) {
 }
 
 void CheckForLineClears(GameState *game_state) {
-  printf("CheckForLineClears:");
+  //printf("CheckForLineClears:");
   int num_lines_cleared = 0;
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     bool line_clear = true;
@@ -400,7 +449,7 @@ void CheckForLineClears(GameState *game_state) {
       }
     }
     if (line_clear) {
-      printf(" %d", row);
+      //printf(" %d", row);
       game_state->cleared_lines[row] = true;
       game_state->clearing_lines = true;
       num_lines_cleared++;
@@ -413,11 +462,11 @@ void CheckForLineClears(GameState *game_state) {
       PlaySound(game_state->line_clear_sound);
     }
   }
-  printf("\n");
+  //printf("\n");
 }
 
 void UpdateAfterClearedLines(GameState *game_state) {
-  printf("UpdateAfterClearedLines\n");
+  //printf("UpdateAfterClearedLines\n");
   int cleared_lines = 0;
   for (int row = PLAYFIELD_HEIGHT - 1; row >= 0; row--) {
     if (game_state->cleared_lines[row]) {
