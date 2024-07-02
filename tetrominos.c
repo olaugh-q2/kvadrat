@@ -223,9 +223,9 @@ void GetRotationOffsets(int piece_index, int starting_rotation,
                         int *col_delta) {
   *row_delta = 0;
   *col_delta = 0;
-  printf("GetRotationOffsets piece_index: %d, starting_rotation: %d, "
-         "rotation_direction: %d, test_index: %d\n",
-         piece_index, starting_rotation, rotation_direction, test_index);
+  //printf("GetRotationOffsets piece_index: %d, starting_rotation: %d, "
+  //       "rotation_direction: %d, test_index: %d\n",
+  //       piece_index, starting_rotation, rotation_direction, test_index);
   if ((test_index == 0) || (piece_index == O_PIECE)) {
     return;
   }
