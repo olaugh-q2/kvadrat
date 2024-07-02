@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "constants.h"
+#include "kwg.h"
 #include "square.h"
 
 #include <stdbool.h>
@@ -59,11 +60,19 @@ typedef struct {
   int word_letters[56][4];
   int words_until_redraw;
 
+  int horizontal_word_ids[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
+  int vertical_word_ids[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
+  int horizontal_word_scores[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
+  int vertical_word_scores[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
+
+  KWG *kwg;
 } GameState;
 
-GameState *CreateInitialGameState(const char *bags_filename);
+GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);
 
 void DestroyGameState(GameState *game_state);
+
+void LoadKwg(GameState *game_state, const char *filename);
 
 void LoadBags(GameState *game_state, const char *filename);
 
@@ -100,5 +109,7 @@ void SpawnNewPiece(GameState *game_state);
 void CheckForLineClears(GameState *game_state);
 
 void UpdateAfterClearedLines(GameState *game_state);
+
+void MarkFormedWords(GameState *game_state);
 
 #endif // GAME_STATE_H
