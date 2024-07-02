@@ -92,7 +92,10 @@ void DisplayNext(const GameState *game_state, const Font *ui_font,
   DrawRectangle(505, 40, 90, 290, BLACK);
 
   for (int i = 1; i <= 5; i++) {
-    int letters[4] = {1, 2, 3, 4}; // FIXME
+    int letters[4];
+    for (int j = 0; j < 4; j++) {
+      letters[j] = game_state->word_letters[i][j];
+    }
     DisplayPiece(game_state->piece_queue[i], i, letters, letter_font);
   }
 }

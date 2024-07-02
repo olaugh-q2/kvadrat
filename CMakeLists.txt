@@ -44,6 +44,11 @@ target_link_libraries(main
     raylib
 )
 
+#set_target_properties(main PROPERTIES
+#    MACOSX_BUNDLE TRUE
+#    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
+#)
+
 target_link_libraries(permutation_evaluator 
     raylib
 )

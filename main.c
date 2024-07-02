@@ -14,6 +14,7 @@ int main(void) {
   const int screenWidth = 800;
   const int screenHeight = 450;
 
+  SetConfigFlags(FLAG_WINDOW_HIGHDPI);
   InitWindow(screenWidth, screenHeight, "kvadrat");
   InitAudioDevice();
 
@@ -21,7 +22,7 @@ int main(void) {
   Font wordgame_font = LoadFont("FranklinGothic.ttf");
 
   SetTargetFPS(60);
-  GameState *game_state = CreateInitialGameState();
+  GameState *game_state = CreateInitialGameState("csw21-bags.txt");
 
   while (!WindowShouldClose()) {
     BeginDrawing();

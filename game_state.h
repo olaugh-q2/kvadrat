@@ -53,13 +53,23 @@ typedef struct {
 
   bool paused;
   Sound pause_sound;
+
+  char *bags;
+  int num_bags;
+  int word_letters[56][4];
+  int words_until_redraw;
+
 } GameState;
 
-GameState *CreateInitialGameState();
+GameState *CreateInitialGameState(const char *bags_filename);
 
 void DestroyGameState(GameState *game_state);
 
+void LoadBags(GameState *game_state, const char *filename);
+
 void DrawRandomPieces(int piece_queue[14], int start_index);
+
+void DrawWordsFromBag(GameState *game_state, int start_index);
 
 void CheckWhetherPaused(GameState *game_state);
 
