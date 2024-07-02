@@ -66,6 +66,8 @@ typedef struct {
   int vertical_word_scores[PLAYFIELD_HEIGHT][PLAYFIELD_WIDTH];
 
   KWG *kwg;
+
+  bool checked_line_clears_this_frame;
 } GameState;
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);

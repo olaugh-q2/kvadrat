@@ -7,6 +7,7 @@
 #include "playfield.h"
 
 #include <assert.h>
+#include <mach/mach_time.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,8 +16,8 @@ int main(void) {
   const int screenHeight = 450;
 
   // seed rand() based on timer
-  srand(GetTime());
-  
+  srand(mach_absolute_time());
+
   SetConfigFlags(FLAG_WINDOW_HIGHDPI);
   InitWindow(screenWidth, screenHeight, "kvadrat");
   InitAudioDevice();
@@ -32,12 +33,13 @@ int main(void) {
 
     ClearBackground(GRAY);
 
+    game_state->checked_line_clears_this_frame = false;
     UpdateLateralMovementIntent(game_state);
 
     CheckWhetherPaused(game_state);
 
     if (!game_state->paused && game_state->soft_locking) {
-      //printf("soft locking\n");
+      // printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
         game_state->soft_locking = false;
@@ -46,16 +48,19 @@ int main(void) {
         PlaySound(game_state->soft_drop_sound);
         LockPiece(game_state);
         PlaceLockedPiece(game_state);
-        CheckForLineClears(game_state);
-        MarkFormedWords(game_state);
+        if (!game_state->checked_line_clears_this_frame) {
+          CheckForLineClears(game_state);
+          MarkFormedWords(game_state);
+          game_state->checked_line_clears_this_frame = true;
+        }
       }
     }
 
     if (!game_state->paused && game_state->locking_piece) {
-      //printf("locking piece\n");
+      // printf("locking piece\n");
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
-        //printf("done locking piece\n");
+        // printf("done locking piece\n");
         if (!game_state->clearing_lines) {
           SpawnNewPiece(game_state);
         }
@@ -63,9 +68,9 @@ int main(void) {
     }
 
     if (!game_state->paused && game_state->clearing_lines) {
-      //printf("clearing lines\n");
+      // printf("clearing lines\n");
       game_state->line_clear_counter++;
-      //printf("line clear counter: %d\n", game_state->line_clear_counter);
+      // printf("line clear counter: %d\n", game_state->line_clear_counter);
       if (game_state->line_clear_counter >= LINE_CLEAR_DELAY) {
         game_state->line_clear_counter = 0;
         game_state->clearing_lines = false;
@@ -75,7 +80,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && !game_state->clearing_lines && !game_state->locking_piece) {
+    if (!game_state->paused && !game_state->clearing_lines &&
+        !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);

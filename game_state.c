@@ -87,6 +87,8 @@ GameState *CreateInitialGameState(const char *bags_filename,
       game_state->vertical_word_scores[row][col] = 0;
     }
   }
+
+  game_state->checked_line_clears_this_frame = false;
   return game_state;
 }
 
@@ -166,9 +168,9 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
   for (int i = 0; i < 7; i++) {
     piece_queue[start_index + i] = bag[i];
   }
-  //piece_queue[start_index] = I_PIECE;
-  //piece_queue[start_index + 1] = O_PIECE;
-  //piece_queue[start_index + 2] = I_PIECE;
+  // piece_queue[start_index] = I_PIECE;
+  // piece_queue[start_index + 1] = O_PIECE;
+  // piece_queue[start_index + 2] = I_PIECE;
 }
 
 void CheckWhetherPaused(GameState *game_state) {
@@ -387,8 +389,11 @@ void MaybeHardDrop(GameState *game_state) {
     PlaySound(game_state->hard_drop_sound);
     LockPiece(game_state);
     PlaceLockedPiece(game_state);
-    CheckForLineClears(game_state);
-    MarkFormedWords(game_state);
+    if (!game_state->checked_line_clears_this_frame) {
+      CheckForLineClears(game_state);
+      MarkFormedWords(game_state);
+      game_state->checked_line_clears_this_frame = true;
+    }
   } else {
     game_state->hard_dropped = false;
   }
@@ -499,11 +504,15 @@ void CheckForLineClears(GameState *game_state) {
       num_lines_cleared++;
     }
   }
-  if (game_state->clearing_lines) {
-    if (num_lines_cleared == 4) {
-      PlaySound(game_state->quad_clear_sound);
-    } else {
-      PlaySound(game_state->line_clear_sound);
+  // This is goofy but my way of avoiding retriggering this sound
+  if (!IsSoundPlaying(game_state->quad_clear_sound) &&
+      !IsSoundPlaying(game_state->line_clear_sound)) {
+    if (num_lines_cleared > 0) {
+      if (num_lines_cleared == 4) {
+        PlaySound(game_state->quad_clear_sound);
+      } else {
+        PlaySound(game_state->line_clear_sound);
+      }
     }
   }
   // printf("\n");
