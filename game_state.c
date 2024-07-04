@@ -15,6 +15,13 @@ GameState *CreateInitialGameState(const char *bags_filename,
                                   const char *kwg_filename) {
   GameState *game_state = (GameState *)malloc(sizeof(GameState));
 
+  game_state->num_lines = 0;
+  game_state->num_pieces = 0;
+  game_state->num_words = 0;
+  game_state->sum_of_word_lengths = 0;
+  game_state->total_score = 0;
+  game_state->unpaused_frame_counter = 0;
+
   LoadKwg(game_state, kwg_filename);
 
   LoadBags(game_state, bags_filename);
@@ -87,6 +94,9 @@ GameState *CreateInitialGameState(const char *bags_filename,
       game_state->vertical_word_scores[row][col] = 0;
     }
   }
+
+  game_state->checked_line_clears_this_frame = false;
+
   return game_state;
 }
 
@@ -166,9 +176,9 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
   for (int i = 0; i < 7; i++) {
     piece_queue[start_index + i] = bag[i];
   }
-  //piece_queue[start_index] = I_PIECE;
-  //piece_queue[start_index + 1] = O_PIECE;
-  //piece_queue[start_index + 2] = I_PIECE;
+  // piece_queue[start_index] = I_PIECE;
+  // piece_queue[start_index + 1] = O_PIECE;
+  // piece_queue[start_index + 2] = I_PIECE;
 }
 
 void CheckWhetherPaused(GameState *game_state) {
@@ -387,8 +397,11 @@ void MaybeHardDrop(GameState *game_state) {
     PlaySound(game_state->hard_drop_sound);
     LockPiece(game_state);
     PlaceLockedPiece(game_state);
-    CheckForLineClears(game_state);
-    MarkFormedWords(game_state);
+    if (!game_state->checked_line_clears_this_frame) {
+      CheckForLineClears(game_state);
+      MarkFormedWords(game_state);
+      game_state->checked_line_clears_this_frame = true;
+    }
   } else {
     game_state->hard_dropped = false;
   }
@@ -479,11 +492,13 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
 
   game_state->gravity_counter = 0;
+  game_state->num_pieces++;
 }
 
 void CheckForLineClears(GameState *game_state) {
   // printf("CheckForLineClears:");
   int num_lines_cleared = 0;
+  int score_sum = 0;
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     bool line_clear = true;
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -494,18 +509,25 @@ void CheckForLineClears(GameState *game_state) {
     }
     if (line_clear) {
       // printf(" %d", row);
+      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        score_sum += game_state->horizontal_word_scores[row][col];
+      }
       game_state->cleared_lines[row] = true;
       game_state->clearing_lines = true;
       num_lines_cleared++;
     }
   }
-  if (game_state->clearing_lines) {
+  game_state->num_lines += num_lines_cleared;
+  game_state->total_score += score_sum;
+
+  if (num_lines_cleared > 0) {
     if (num_lines_cleared == 4) {
       PlaySound(game_state->quad_clear_sound);
     } else {
       PlaySound(game_state->line_clear_sound);
     }
   }
+
   // printf("\n");
 }
 
@@ -515,6 +537,20 @@ void UpdateAfterClearedLines(GameState *game_state) {
   for (int row = PLAYFIELD_HEIGHT - 1; row >= 0; row--) {
     if (game_state->cleared_lines[row]) {
       for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        game_state->total_score += game_state->horizontal_word_scores[row][col];
+        if (game_state->horizontal_word_scores[row][col] != 0) {
+          game_state->num_words++;
+          int word_length = 1;
+          for (int col2 = col + 1; col2 < PLAYFIELD_WIDTH; col2++) {
+            if (game_state->horizontal_word_ids[row][col2] ==
+                game_state->horizontal_word_ids[row][col]) {
+              word_length++;
+            } else {
+              break;
+            }
+          }
+          game_state->sum_of_word_lengths += word_length;
+        }
         game_state->squares[row][col] = EMPTY_SQUARE;
       }
       cleared_lines++;

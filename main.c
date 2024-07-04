@@ -5,8 +5,10 @@
 #include "inputs.h"
 #include "next.h"
 #include "playfield.h"
+#include "stats.h"
 
 #include <assert.h>
+#include <mach/mach_time.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,14 +17,15 @@ int main(void) {
   const int screenHeight = 450;
 
   // seed rand() based on timer
-  srand(GetTime());
-  
+  srand(mach_absolute_time());
+
   SetConfigFlags(FLAG_WINDOW_HIGHDPI);
   InitWindow(screenWidth, screenHeight, "kvadrat");
   InitAudioDevice();
 
-  Font ui_font = LoadFont("Futura-Medium-01.ttf");
-  Font wordgame_font = LoadFont("FranklinGothic.ttf");
+  Font ui_font = LoadFontEx("Futura-Medium-01.ttf", 64, NULL, 0);
+  Font wordgame_font = LoadFontEx("FranklinGothic.ttf", 96, NULL, 0);
+  Font stats_font = LoadFontEx("HunDIN1451.ttf", 96, NULL, 0);
 
   SetTargetFPS(60);
   GameState *game_state = CreateInitialGameState("csw21-bags.txt", "CSW21.kwg");
@@ -32,12 +35,16 @@ int main(void) {
 
     ClearBackground(GRAY);
 
+    game_state->checked_line_clears_this_frame = false;
     UpdateLateralMovementIntent(game_state);
 
     CheckWhetherPaused(game_state);
-
+    if (!game_state->paused) {
+      game_state->unpaused_frame_counter++;
+    }
+    
     if (!game_state->paused && game_state->soft_locking) {
-      //printf("soft locking\n");
+      // printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
         game_state->soft_locking = false;
@@ -46,16 +53,19 @@ int main(void) {
         PlaySound(game_state->soft_drop_sound);
         LockPiece(game_state);
         PlaceLockedPiece(game_state);
-        CheckForLineClears(game_state);
-        MarkFormedWords(game_state);
+        if (!game_state->checked_line_clears_this_frame) {
+          CheckForLineClears(game_state);
+          MarkFormedWords(game_state);
+          game_state->checked_line_clears_this_frame = true;
+        }
       }
     }
 
     if (!game_state->paused && game_state->locking_piece) {
-      //printf("locking piece\n");
+      // printf("locking piece\n");
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
-        //printf("done locking piece\n");
+        // printf("done locking piece\n");
         if (!game_state->clearing_lines) {
           SpawnNewPiece(game_state);
         }
@@ -63,9 +73,9 @@ int main(void) {
     }
 
     if (!game_state->paused && game_state->clearing_lines) {
-      //printf("clearing lines\n");
+      // printf("clearing lines\n");
       game_state->line_clear_counter++;
-      //printf("line clear counter: %d\n", game_state->line_clear_counter);
+      // printf("line clear counter: %d\n", game_state->line_clear_counter);
       if (game_state->line_clear_counter >= LINE_CLEAR_DELAY) {
         game_state->line_clear_counter = 0;
         game_state->clearing_lines = false;
@@ -75,7 +85,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && !game_state->clearing_lines && !game_state->locking_piece) {
+    if (!game_state->paused && !game_state->clearing_lines &&
+        !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);
@@ -104,6 +115,8 @@ int main(void) {
     DisplayNext(game_state, &ui_font, &wordgame_font);
     DisplayInputs(&ui_font);
 
+    DisplayStats(game_state, &ui_font, &stats_font);
+
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
     DrawText(fpsText, 10, 10, 15, BLACK);
@@ -114,6 +127,10 @@ int main(void) {
 
   CloseWindow();
   CloseAudioDevice();
+
+  UnloadFont(ui_font);
+  UnloadFont(wordgame_font);
+  UnloadFont(stats_font);
 
   DestroyGameState(game_state);
 

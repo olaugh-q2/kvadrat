@@ -77,8 +77,8 @@ void DisplayPiece(int piece_type, int queue_index, int letters[4],
         Color text_color = Fade(BLACK, 0.9);
 
         DrawTextEx(*letter_font, text,
-                   (Vector2){rectangle_x + mino_size*0.5 - text_size.x / 2,
-                             rectangle_y + mino_size*0.5 - text_size.y / 2},
+                   (Vector2){rectangle_x + mino_size * 0.5 - text_size.x / 2,
+                             rectangle_y + mino_size * 0.5 - text_size.y / 2},
                    12, 1, text_color);
       }
     }
@@ -87,8 +87,7 @@ void DisplayPiece(int piece_type, int queue_index, int letters[4],
 
 void DisplayNext(const GameState *game_state, const Font *ui_font,
                  const Font *letter_font) {
-  DrawTextEx(*ui_font, "NEXT", (Vector2){510, 22}, ui_font->baseSize * 0.5, 1.0,
-             BLACK);
+  DrawTextEx(*ui_font, "NEXT", (Vector2){510, 22}, 16, 1.0, BLACK);
   DrawRectangle(505, 40, 90, 290, BLACK);
 
   for (int i = 1; i <= 5; i++) {
