@@ -31,7 +31,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_executable(main "main.c" "constants.h" "game_state.h" "game_state.c"
                "inputs.h" "inputs.c" "next.h" "next.c" "playfield.h" "playfield.c" "square.h" "tetrominos.h"
                "tetrominos.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
-               "string_util.h" "string_util.c" "util.h" "util.c")
+               "string_util.h" "string_util.c" "util.h" "util.c" "stats.h" "stats.c")
 
 add_executable(word_bag_maker "word_bag_maker.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
                "string_util.h" "string_util.c" "util.h" "util.c" "bag.h")

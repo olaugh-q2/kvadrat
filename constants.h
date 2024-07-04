@@ -18,5 +18,6 @@
 #define LINE_CLEAR_COLLAPSE_DELAY 10
 
 #define MINIMUM_WORD_SCORE 40
+#define MAX_LINES 40
 
 #endif // CONSTANTS_H

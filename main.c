@@ -5,6 +5,7 @@
 #include "inputs.h"
 #include "next.h"
 #include "playfield.h"
+#include "stats.h"
 
 #include <assert.h>
 #include <mach/mach_time.h>
@@ -22,8 +23,9 @@ int main(void) {
   InitWindow(screenWidth, screenHeight, "kvadrat");
   InitAudioDevice();
 
-  Font ui_font = LoadFont("Futura-Medium-01.ttf");
-  Font wordgame_font = LoadFont("FranklinGothic.ttf");
+  Font ui_font = LoadFontEx("Futura-Medium-01.ttf", 64, NULL, 0);
+  Font wordgame_font = LoadFontEx("FranklinGothic.ttf", 96, NULL, 0);
+  Font stats_font = LoadFontEx("HunDIN1451.ttf", 96, NULL, 0);
 
   SetTargetFPS(60);
   GameState *game_state = CreateInitialGameState("csw21-bags.txt", "CSW21.kwg");
@@ -37,7 +39,10 @@ int main(void) {
     UpdateLateralMovementIntent(game_state);
 
     CheckWhetherPaused(game_state);
-
+    if (!game_state->paused) {
+      game_state->unpaused_frame_counter++;
+    }
+    
     if (!game_state->paused && game_state->soft_locking) {
       // printf("soft locking\n");
       game_state->soft_lock_counter++;
@@ -110,6 +115,8 @@ int main(void) {
     DisplayNext(game_state, &ui_font, &wordgame_font);
     DisplayInputs(&ui_font);
 
+    DisplayStats(game_state, &ui_font, &stats_font);
+
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
     DrawText(fpsText, 10, 10, 15, BLACK);
@@ -120,6 +127,10 @@ int main(void) {
 
   CloseWindow();
   CloseAudioDevice();
+
+  UnloadFont(ui_font);
+  UnloadFont(wordgame_font);
+  UnloadFont(stats_font);
 
   DestroyGameState(game_state);
 

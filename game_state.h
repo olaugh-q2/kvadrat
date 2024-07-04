@@ -68,6 +68,13 @@ typedef struct {
   KWG *kwg;
 
   bool checked_line_clears_this_frame;
+
+  int num_lines;
+  int num_pieces;
+  int num_words;
+  int sum_of_word_lengths;
+  int total_score;
+  int unpaused_frame_counter;
 } GameState;
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);

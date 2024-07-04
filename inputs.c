@@ -2,9 +2,8 @@
 
 #include "inputs.h"
 
-void DisplayInputs(const Font* font) {
-  DrawTextEx(*font, "INPUTS", (Vector2){180, 22}, font->baseSize * 0.5, 1.0,
-             BLACK);
+void DisplayInputs(const Font *font) {
+  DrawTextEx(*font, "INPUTS", (Vector2){180, 22}, 16, 1.0, BLACK);
   DrawRectangle(175, 40, 120, 45, BLACK);
 
   // Draw outline of NES D-pad
