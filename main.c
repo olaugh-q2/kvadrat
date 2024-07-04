@@ -23,7 +23,14 @@ int main(void) {
   InitWindow(screenWidth, screenHeight, "kvadrat");
   InitAudioDevice();
 
-  Font ui_font = LoadFontEx("Futura-Medium-01.ttf", 64, NULL, 0);
+  int codepoints[512] = {0};
+  for (int i = 0; i < 96; i++) {
+    codepoints[i] = 32 + i; // ASCII
+  }
+  for (int i = 0; i < 256; i++) {
+    codepoints[96 + i] = 0x400 + i; // Cyrillic
+  }
+  Font ui_font = LoadFontEx("FuturaCyrillicMedium.ttf", 64, codepoints, 512);
   Font wordgame_font = LoadFontEx("FranklinGothic.ttf", 96, NULL, 0);
   Font stats_font = LoadFontEx("HunDIN1451.ttf", 96, NULL, 0);
 
@@ -42,7 +49,7 @@ int main(void) {
     if (!game_state->paused) {
       game_state->unpaused_frame_counter++;
     }
-    
+
     if (!game_state->paused && game_state->soft_locking) {
       // printf("soft locking\n");
       game_state->soft_lock_counter++;
