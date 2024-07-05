@@ -39,11 +39,12 @@ GameState *CreateInitialGameState(const char *bags_filename,
   for (int i = 0; i < 4; i++) {
     letters[i] = game_state->word_letters[0][i];
   }
-  CreatePiece(game_state->active_piece_index, game_state->active_piece,
-              ROTATION_0, letters);
-  game_state->active_piece_row = 0;
-  game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
+  //CreatePiece(game_state->active_piece_index, game_state->active_piece,
+  //            ROTATION_0, letters);
+  //game_state->active_piece_row = 0;
+  //game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
   game_state->pieces_until_redraw = 1;
+  SpawnNewPiece(game_state);
 
   game_state->lateral_movement_counter = 0;
   game_state->lateral_movement_direction = 0;
@@ -461,7 +462,7 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->soft_locking = false;
   game_state->soft_lock_counter = 0;
 
-  // printf("SpawnNewPiece\n");
+  printf("SpawnNewPiece\n");
 
   game_state->words_until_redraw--;
   for (int i = 0; i < 55; i++) {
@@ -499,6 +500,7 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
 
   game_state->gravity_counter = 0;
+  printf("game_state->num_pieces %d -> %d\n", game_state->num_pieces, game_state->num_pieces + 1);
   game_state->num_pieces++;
 }
 
