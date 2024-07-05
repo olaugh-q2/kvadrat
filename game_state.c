@@ -95,6 +95,7 @@ GameState *CreateInitialGameState(const char *bags_filename,
     }
   }
 
+  game_state->num_words_formed = 0;
   game_state->checked_line_clears_this_frame = false;
 
   return game_state;
@@ -398,8 +399,8 @@ void MaybeHardDrop(GameState *game_state) {
     LockPiece(game_state);
     PlaceLockedPiece(game_state);
     if (!game_state->checked_line_clears_this_frame) {
-      CheckForLineClears(game_state);
       MarkFormedWords(game_state);
+      CheckForLineClears(game_state);
       game_state->checked_line_clears_this_frame = true;
     }
   } else {
@@ -496,9 +497,10 @@ void SpawnNewPiece(GameState *game_state) {
 }
 
 void CheckForLineClears(GameState *game_state) {
-  // printf("CheckForLineClears:");
+  printf("CheckForLineClears:");
   int num_lines_cleared = 0;
   int score_sum = 0;
+  int words_this_frame = 0;
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     bool line_clear = true;
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -508,9 +510,40 @@ void CheckForLineClears(GameState *game_state) {
       }
     }
     if (line_clear) {
-      // printf(" %d", row);
+      printf("line clear in %d\n", row);
       for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
-        score_sum += game_state->horizontal_word_scores[row][col];
+        const int word_score = game_state->horizontal_word_scores[row][col];
+        if (word_score > 0) {
+          int word_length = 1;
+          int word_id = game_state->horizontal_word_ids[row][col];
+          for (int col2 = col + 1; col2 < PLAYFIELD_WIDTH; col2++) {
+            if (game_state->horizontal_word_ids[row][col2] == word_id) {
+              word_length++;
+            } else {
+              break;
+            }
+          }
+          score_sum += word_score;
+          assert(game_state->num_words_formed < MAX_WORDS_PER_GAME);
+          const int words_formed_offset =
+              game_state->num_words_formed * (PLAYFIELD_WIDTH + 1);
+          for (int i = 0; i < word_length; i++) {
+            const int ml = game_state->squares[row][col + i] >> 8;
+            char c = ml + 'A' - 1;
+            game_state->words_formed[words_formed_offset + i] = c;
+          }
+          game_state->words_formed[words_formed_offset + word_length] = '\0';
+          game_state->words_formed_scores[game_state->num_words_formed] =
+              word_score;
+          game_state->words_formed_lengths[game_state->num_words_formed] =
+              word_length;
+          game_state->words_formed_at_frame[game_state->num_words_formed] =
+              game_state->unpaused_frame_counter;
+          game_state->words_formed_indices[game_state->num_words_formed] =
+              words_this_frame;
+          game_state->num_words_formed++;
+          words_this_frame++;
+        }
       }
       game_state->cleared_lines[row] = true;
       game_state->clearing_lines = true;
@@ -532,7 +565,7 @@ void CheckForLineClears(GameState *game_state) {
 }
 
 void UpdateAfterClearedLines(GameState *game_state) {
-  // printf("UpdateAfterClearedLines\n");
+  printf("UpdateAfterClearedLines\n");
   int cleared_lines = 0;
   for (int row = PLAYFIELD_HEIGHT - 1; row >= 0; row--) {
     if (game_state->cleared_lines[row]) {
@@ -653,6 +686,32 @@ void MarkBestHorizontalWords(GameState *game_state, uint32_t dawg_root,
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       this_score_sum += word_scores[col];
     }
+    if (this_score_sum > 0) {
+      printf("row %d: ", row);
+      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        if (word_marking[col] > 0) {
+          printf("%d ", word_marking[col]);
+        } else {
+          printf(". ");
+        }
+      }
+      printf(" ");
+      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        if (word_marking[col] > 0) {
+          printf("%c", (game_state->squares[row][col] >> 8) + 'A' - 1);
+        } else {
+          printf(".");
+        }
+      }
+      printf(" ");
+      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        const int score = word_scores[col];
+        if (score > 0) {
+          printf(" %d@%d", score, col);
+        }
+      }
+      printf("\n");
+    }
     // printf("this_score_sum: %d, best_score_sum: %d\n", this_score_sum,
     //        best_score_sum);
     if (this_score_sum > best_score_sum) {
@@ -672,63 +731,73 @@ void MarkBestHorizontalWords(GameState *game_state, uint32_t dawg_root,
     new_word_marking[col] = word_marking[col];
     new_word_scores[col] = word_scores[col];
   }
-  MarkBestHorizontalWords(game_state, dawg_root, dawg_root, false, row,
-                          current_col + 1, -1, next_word_id, false, 0,
-                          best_word_marking, best_word_scores, new_word_marking,
-                          new_word_scores);
   if (square == EMPTY_SQUARE) {
+    MarkBestHorizontalWords(game_state, dawg_root, dawg_root, false, row,
+                            current_col + 1, -1, next_word_id, false, 0,
+                            best_word_marking, best_word_scores,
+                            new_word_marking, new_word_scores);
     return;
   }
   const int color = square & PIECE_MASK;
-  if (!ended_word) {
+  if (ended_word) {
+    color_changed = false;
+  } else {
     color_changed |= color && previous_color && (color != previous_color);
-    const int ml = square >> 8;
-    // printf("ml: %d\n", ml);
-    uint32_t next_node_index = 0;
-    accepts = false;
-    for (uint32_t i = node_index;; i++) {
-      const uint32_t node = kwg_node(game_state->kwg, i);
-      if (kwg_node_tile(node) == ml) {
-        next_node_index = kwg_node_arc_index_prefetch(node, game_state->kwg);
-        accepts = kwg_node_accepts(node);
-        break;
-      }
-      if (kwg_node_is_end(node)) {
-        break;
-      }
+  }
+  if (ended_word) {
+    MarkBestHorizontalWords(game_state, dawg_root, dawg_root, false, row,
+                            current_col, -1, next_word_id, false, 0,
+                            best_word_marking, best_word_scores,
+                            new_word_marking, new_word_scores);
+    return;
+  }
+  const int ml = square >> 8;
+  // printf("ml: %d\n", ml);
+  uint32_t next_node_index = 0;
+  accepts = false;
+  for (uint32_t i = node_index;; i++) {
+    const uint32_t node = kwg_node(game_state->kwg, i);
+    if (kwg_node_tile(node) == ml) {
+      next_node_index = kwg_node_arc_index_prefetch(node, game_state->kwg);
+      accepts = kwg_node_accepts(node);
+      break;
     }
-    // printf("next_node_index: %d\n", next_node_index);
-    // printf("accepts: %d\n", accepts);
-    if (word_start_col < 0) {
-      word_start_col = current_col;
+    if (kwg_node_is_end(node)) {
+      break;
     }
-    // printf("possibly make, possibly extend word from %d to %d\n",
-    //        word_start_col, current_col);
-    if (accepts) {
-      int new_word_marking2[PLAYFIELD_WIDTH];
-      int new_word_scores2[PLAYFIELD_WIDTH];
+  }
+  // printf("next_node_index: %d\n", next_node_index);
+  // printf("accepts: %d\n", accepts);
+  if (word_start_col < 0) {
+    word_start_col = current_col;
+  }
 
-      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
-        new_word_marking2[col] = word_marking[col];
-        new_word_scores2[col] = word_scores[col];
-      }
-      MarkBestHorizontalWords(
-          game_state, dawg_root, next_node_index, accepts, row, current_col + 1,
-          word_start_col, next_word_id, color_changed, color, best_word_marking,
-          best_word_scores, new_word_marking2, new_word_scores2);
-    }
-    int new_word_marking3[PLAYFIELD_WIDTH];
+  // end the word with this letter;
+  if (color_changed && accepts) {
+    int new_word_marking2[PLAYFIELD_WIDTH];
     int new_word_scores2[PLAYFIELD_WIDTH];
 
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
-      new_word_marking3[col] = word_marking[col];
+      new_word_marking2[col] = word_marking[col];
       new_word_scores2[col] = word_scores[col];
     }
     MarkBestHorizontalWords(
-        game_state, dawg_root, next_node_index, false, row, current_col + 1,
+        game_state, dawg_root, next_node_index, accepts, row, current_col + 1,
         word_start_col, next_word_id, color_changed, color, best_word_marking,
-        best_word_scores, new_word_marking3, new_word_scores2);
+        best_word_scores, new_word_marking2, new_word_scores2);
   }
+
+  int new_word_marking3[PLAYFIELD_WIDTH];
+  int new_word_scores3[PLAYFIELD_WIDTH];
+  for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+    new_word_marking3[col] = word_marking[col];
+    new_word_scores3[col] = word_scores[col];
+  }
+  MarkBestHorizontalWords(
+      game_state, dawg_root, next_node_index, false, row, current_col + 1,
+      word_start_col, next_word_id, color_changed, color, best_word_marking,
+      best_word_scores, new_word_marking3, new_word_scores3);
+
   // printf("start a new word at %d\n", current_col + 1);
   int new_word_marking4[PLAYFIELD_WIDTH];
   int new_word_scores4[PLAYFIELD_WIDTH];
@@ -743,7 +812,7 @@ void MarkBestHorizontalWords(GameState *game_state, uint32_t dawg_root,
 }
 
 void MarkFormedWords(GameState *game_state) {
-  // printf("MarkFormedWords\n");
+  printf("MarkFormedWords\n");
   const uint32_t dawg_root = kwg_get_dawg_root_node_index(game_state->kwg);
   // printf("dawg_root: %d\n", dawg_root);
   int best_word_marking[PLAYFIELD_WIDTH];
@@ -768,7 +837,6 @@ void MarkFormedWords(GameState *game_state) {
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       best_score_sum += best_word_scores[col];
     }
-    /*
     if (best_score_sum > 0) {
       printf("row %d: ", row);
       for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -778,6 +846,15 @@ void MarkFormedWords(GameState *game_state) {
           printf(". ");
         }
       }
+      printf(" ");
+      for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+        if (best_word_marking[col] > 0) {
+          printf("%c", (game_state->squares[row][col] >> 8) + 'A' - 1);
+        } else {
+          printf(".");
+        }
+      }
+      printf(" ");
       for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
         const int score = best_word_scores[col];
         if (score > 0) {
@@ -786,6 +863,5 @@ void MarkFormedWords(GameState *game_state) {
       }
       printf("\n");
     }
-    */
   }
 }

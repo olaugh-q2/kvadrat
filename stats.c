@@ -135,12 +135,14 @@ void DisplayStats(const GameState *game_state, const Font *label_font,
                            time_thousandths_text_size.x,
                        320},
              24, 1.0, BLACK);
-  printf("time_minutes_and_seconds_text: %s\n", time_minutes_and_seconds_text);
-  printf("time_thousandths_text: %s\n", time_thousandths_text);
-  printf("time_total_thousandths: %d\n", time_total_thousandths);
-  printf("time_total_seconds: %d\n", time_total_seconds);
-  printf("time_seconds: %d\n", time_seconds);
-  printf("time_minutes: %d\n", time_minutes);
+  /*
+printf("time_minutes_and_seconds_text: %s\n", time_minutes_and_seconds_text);
+printf("time_thousandths_text: %s\n", time_thousandths_text);
+printf("time_total_thousandths: %d\n", time_total_thousandths);
+printf("time_total_seconds: %d\n", time_total_seconds);
+printf("time_seconds: %d\n", time_seconds);
+printf("time_minutes: %d\n", time_minutes);
+*/
   free(time_thousandths_text);
   free(time_minutes_and_seconds_text);
 }

@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "formed_words.h"
 #include "raylib.h"
 
 #include "game_state.h"
@@ -61,8 +62,8 @@ int main(void) {
         LockPiece(game_state);
         PlaceLockedPiece(game_state);
         if (!game_state->checked_line_clears_this_frame) {
-          CheckForLineClears(game_state);
           MarkFormedWords(game_state);
+          CheckForLineClears(game_state);
           game_state->checked_line_clears_this_frame = true;
         }
       }
@@ -123,6 +124,8 @@ int main(void) {
     DisplayInputs(&ui_font);
 
     DisplayStats(game_state, &ui_font, &stats_font);
+
+    DisplayFormedWords(game_state, &wordgame_font, &stats_font);
 
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
