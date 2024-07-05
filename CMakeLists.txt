@@ -27,6 +27,15 @@ endif()
 #We don't want raylib's examples built. This option is picked up by raylib's CMakeLists.txt
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
+# Add sanitizers
+set(SANITIZE_FLAGS "-fsanitize=address,undefined")
+
+# Set compiler and linker flags
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZE_FLAGS}")
+
 #Here, the executable is declared with its sources. "main", or "main.exe" on windows will be the program's name
 add_executable(main "main.c" "constants.h" "game_state.h" "game_state.c"
                "inputs.h" "inputs.c" "next.h" "next.c" "playfield.h" "playfield.c" "square.h" "tetrominos.h"
