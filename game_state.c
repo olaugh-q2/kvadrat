@@ -39,11 +39,12 @@ GameState *CreateInitialGameState(const char *bags_filename,
   for (int i = 0; i < 4; i++) {
     letters[i] = game_state->word_letters[0][i];
   }
-  CreatePiece(game_state->active_piece_index, game_state->active_piece,
-              ROTATION_0, letters);
-  game_state->active_piece_row = 0;
-  game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
+  //CreatePiece(game_state->active_piece_index, game_state->active_piece,
+  //            ROTATION_0, letters);
+  //game_state->active_piece_row = 0;
+  //game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
   game_state->pieces_until_redraw = 1;
+  SpawnNewPiece(game_state);
 
   game_state->lateral_movement_counter = 0;
   game_state->lateral_movement_direction = 0;
@@ -112,9 +113,8 @@ void DestroyGameState(GameState *game_state) {
     UnloadSound(game_state->move_sounds[i]);
   }
   UnloadSound(game_state->pause_sound);
-  free(game_state);
-
   free(game_state->bags);
+  free(game_state);
 }
 
 void LoadKwg(GameState *game_state, const char *filename) {
@@ -149,20 +149,22 @@ void DrawWordsFromBag(GameState *game_state, int start_index) {
           game_state->bags[bag_index * (28 * 5 + 1) + i * 5 + j] - 'A' + 1;
     }
   }
-  /*
-  char quiz[5] = "QUIZ";
+/*  
+  char swum[5] = "SWUM";
+  char rulb[5] = "RULB";
+  char zoea[5] = "ZOEA";
+  char abpu[5] = "ABPU";
+  char quag[5] = "QUAG";
+  char amen[5] = "AMEN";
   for (int i = 0; i < 4; i++) {
-    game_state->word_letters[start_index][i] = quiz[i] - 'A' + 1;
+    game_state->word_letters[start_index + 0][i] = swum[i] - 'A' + 1;
+    game_state->word_letters[start_index + 1][i] = rulb[i] - 'A' + 1;
+    game_state->word_letters[start_index + 2][i] = zoea[i] - 'A' + 1;
+    game_state->word_letters[start_index + 3][i] = abpu[i] - 'A' + 1;
+    game_state->word_letters[start_index + 4][i] = quag[i] - 'A' + 1;
+    game_state->word_letters[start_index + 5][i] = amen[i] - 'A' + 1;
   }
-  char moho[5] = "MAMA";
-  for (int i = 0; i < 4; i++) {
-    game_state->word_letters[start_index + 1][i] = moho[i] - 'A' + 1;
-  }
-  char soft[5] = "STER";
-  for (int i = 0; i < 4; i++) {
-    game_state->word_letters[start_index + 2][i] = soft[i] - 'A' + 1;
-  }
-  */
+*/  
   // TODO: shuffle
 }
 
@@ -177,9 +179,14 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
   for (int i = 0; i < 7; i++) {
     piece_queue[start_index + i] = bag[i];
   }
-  // piece_queue[start_index] = I_PIECE;
-  // piece_queue[start_index + 1] = O_PIECE;
-  // piece_queue[start_index + 2] = I_PIECE;
+/*  
+  piece_queue[start_index + 0] = J_PIECE;
+  piece_queue[start_index + 1] = J_PIECE;
+  piece_queue[start_index + 2] = I_PIECE;
+  piece_queue[start_index + 3] = J_PIECE;
+  piece_queue[start_index + 4] = O_PIECE;
+  piece_queue[start_index + 5] = J_PIECE;
+*/  
 }
 
 void CheckWhetherPaused(GameState *game_state) {
@@ -455,10 +462,10 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->soft_locking = false;
   game_state->soft_lock_counter = 0;
 
-  // printf("SpawnNewPiece\n");
+  printf("SpawnNewPiece\n");
 
   game_state->words_until_redraw--;
-  for (int i = 0; i < 56; i++) {
+  for (int i = 0; i < 55; i++) {
     for (int j = 0; j < 4; j++) {
       game_state->word_letters[i][j] = game_state->word_letters[i + 1][j];
     }
@@ -493,6 +500,7 @@ void SpawnNewPiece(GameState *game_state) {
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
 
   game_state->gravity_counter = 0;
+  printf("game_state->num_pieces %d -> %d\n", game_state->num_pieces, game_state->num_pieces + 1);
   game_state->num_pieces++;
 }
 

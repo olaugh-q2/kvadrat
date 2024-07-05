@@ -13,9 +13,9 @@
 Playfield *CreateInitialPlayfield() {
   Playfield *playfield = (Playfield *)malloc(sizeof(Playfield));
 
-  for (int i = 0; i < PLAYFIELD_WIDTH; i++) {
-    for (int j = 0; j < PLAYFIELD_HEIGHT; j++) {
-      playfield->squares[i][j] = EMPTY_SQUARE;
+  for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
+    for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+      playfield->squares[row][col] = EMPTY_SQUARE;
     }
   }
 
