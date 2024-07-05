@@ -6,7 +6,7 @@ project(graphical_template)
 
 #Some CMake tomfoolery
 if(POLICY CMP0135)
-cmake_policy(SET CMP0135 NEW)
+    cmake_policy(SET CMP0135 NEW)
 endif()
 #End CMake tomfoolery
 
@@ -31,16 +31,16 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_executable(main "main.c" "constants.h" "game_state.h" "game_state.c"
                "inputs.h" "inputs.c" "next.h" "next.c" "playfield.h" "playfield.c" "square.h" "tetrominos.h"
                "tetrominos.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
-               "string_util.h" "string_util.c" "util.h" "util.c" "stats.h" "stats.c")
+               "string_util.h" "string_util.c" "util.h" "util.c" "stats.h" "stats.c" "formed_words.h" "formed_words.c")
 
 add_executable(word_bag_maker "word_bag_maker.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
                "string_util.h" "string_util.c" "util.h" "util.c" "bag.h")
 
 add_executable(permutation_evaluator "permutation_evaluator.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
-               "string_util.h" "string_util.c" "util.h" "util.c" "bag.h" "tetrominos.h" "tetrominos.c" "playfield.h" "playfield.c" "square.h")               
+               "string_util.h" "string_util.c" "util.h" "util.c" "bag.h" "tetrominos.h" "tetrominos.c" "playfield.h" "playfield.c" "square.h")
 
 #Link raylib to main
-target_link_libraries(main 
+target_link_libraries(main
     raylib
 )
 
@@ -49,7 +49,7 @@ target_link_libraries(main
 #    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
 #)
 
-target_link_libraries(permutation_evaluator 
+target_link_libraries(permutation_evaluator
     raylib
 )
 

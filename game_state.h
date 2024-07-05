@@ -75,6 +75,13 @@ typedef struct {
   int sum_of_word_lengths;
   int total_score;
   int unpaused_frame_counter;
+
+  char words_formed[MAX_WORDS_PER_GAME * (PLAYFIELD_WIDTH + 1)];
+  int words_formed_scores[MAX_WORDS_PER_GAME];
+  int words_formed_lengths[MAX_WORDS_PER_GAME];
+  int words_formed_at_frame[MAX_WORDS_PER_GAME];
+  int words_formed_indices[MAX_WORDS_PER_GAME];
+  int num_words_formed;
 } GameState;
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);

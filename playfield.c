@@ -80,6 +80,19 @@ void CopyGhostPieceToPlayfield(const GameState *game_state,
   }
 }
 
+Color PlayfieldGetColorForScore(int word_score) {
+  if (word_score < 100) {
+    return Fade(DARKPURPLE, 1.0f);
+  }
+  if (word_score <= 400) {
+    return Fade(DARKBLUE, 1.0f);
+  }
+  if (word_score <= 1000) {
+    return Fade(DARKGREEN, 1.0f);
+  }
+  return Fade(RED, 1.0f);
+}
+
 void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
                       const Font *ui_font, const Font *letter_font) {
   DrawRectangle(300, 25, 200, 400, DARKGRAY);
@@ -163,6 +176,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
       if (word_id == 0 && line_clear_after_flash) {
         ml = 0;
       }
+      bool is_word_start_col = false;
+      bool is_word_end_col = false;
       if (word_id != 0) {
         int word_start_col = col;
         while (word_start_col > 0 &&
@@ -170,9 +185,17 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
                    word_id) {
           word_start_col--;
         }
+        int word_end_col = col;
+        while (word_end_col < PLAYFIELD_WIDTH - 1 &&
+               game_state->horizontal_word_ids[row][word_end_col + 1] ==
+                   word_id) {
+          word_end_col++;
+        }
+        is_word_start_col = word_start_col == col;
+        is_word_end_col = word_end_col == col;
         word_score = game_state->horizontal_word_scores[row][word_start_col];
-        printf("row: %d, col: %d, word_id: %d, word_score: %d\n", row, col,
-               word_id, word_score);
+        // printf("row: %d, col: %d, word_id: %d, word_score: %d\n", row, col,
+        //        word_id, word_score);
         /*
         const float log_score = log(word_score);
 
@@ -206,19 +229,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
           word_color = Fade(color, ghost_alpha);
         }
         if (word_score) {
-          if (word_score < 100) {
-            word_color = Fade(DARKPURPLE, 1.0f);
-            printf("DARKPURPLE\n");
-          } else if (word_score <= 400) {
-            word_color = Fade(DARKBLUE, 1.0f);
-            printf("DARKBLUE\n");
-          } else if (word_score <= 1000) {
-            word_color = Fade(DARKGREEN, 1.0f);
-            printf("DARKGREEN\n");
-          } else {
-            word_color = Fade(RED, 1.0f);
-            printf("RED\n");
-          }
+          // word_color = RED;
+          word_color = PlayfieldGetColorForScore(word_score);
         }
         if (line_clear_after_flash) {
           DrawRectangle(301 + col * 20, 25 + row * 20, 20, 20, word_color);
@@ -235,6 +247,27 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         const float flash_alpha =
             1.0f * game_state->line_clear_counter / LINE_CLEAR_FLASH_DELAY;
         DrawRectangle(300, 26 + row * 20, 200, 20, Fade(WHITE, flash_alpha));
+      }
+    }
+    for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
+      if (game_state->horizontal_word_scores[row][col] != 0) {
+        const int word_id = game_state->horizontal_word_ids[row][col];
+        int end_col = col;
+        while (end_col < PLAYFIELD_WIDTH - 1 &&
+               game_state->horizontal_word_ids[row][end_col + 1] == word_id) {
+          end_col++;
+        }
+        Color word_color = PlayfieldGetColorForScore(
+            game_state->horizontal_word_scores[row][col]);
+        if (game_state->cleared_lines[row] &&
+            game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY + LINE_CLEAR_COLLAPSE_DELAY) {
+          word_color = WHITE;
+        }
+        const int word_length = end_col - col + 1;
+        // Draw a box with rounded corners
+        DrawRectangleRoundedLines(
+            (Rectangle){300+2.5 + col * 20, 25 +2.5 + row * 20, 20 * word_length-5, 20-5},
+            0.5, 4, 2.5, word_color);
       }
     }
   }
