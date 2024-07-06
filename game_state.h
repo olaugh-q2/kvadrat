@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "constants.h"
 #include "kwg.h"
+#include "session_state.h"
 #include "square.h"
 
 #include <stdbool.h>
@@ -130,7 +131,7 @@ void SpawnNewPiece(GameState *game_state);
 
 void CheckForLineClears(GameState *game_state);
 
-void UpdateAfterClearedLines(GameState *game_state);
+void UpdateAfterClearedLines(GameState *game_state, SessionState *session_state);
 
 void MarkFormedWords(GameState *game_state);
 

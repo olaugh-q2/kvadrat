@@ -6,6 +6,7 @@
 #include "inputs.h"
 #include "next.h"
 #include "playfield.h"
+#include "session_state.h"
 #include "stats.h"
 
 #include <assert.h>
@@ -37,6 +38,7 @@ int main(void) {
 
   SetTargetFPS(60);
   GameState *game_state = CreateInitialGameState("csw21-bags.txt", "CSW21.kwg");
+  SessionState *session_state = CreateSessionState();
 
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -94,7 +96,7 @@ int main(void) {
       if (game_state->line_clear_counter >= LINE_CLEAR_DELAY) {
         game_state->line_clear_counter = 0;
         game_state->clearing_lines = false;
-        UpdateAfterClearedLines(game_state);
+        UpdateAfterClearedLines(game_state, session_state);
         MarkFormedWords(game_state);
         SpawnNewPiece(game_state);
       }
@@ -131,13 +133,13 @@ int main(void) {
     DisplayNext(game_state, &ui_font, &wordgame_font);
     DisplayInputs(&ui_font);
 
-    DisplayStats(game_state, &ui_font, &stats_font);
+    DisplayStats(game_state, session_state, &ui_font, &stats_font);
 
     DisplayFormedWords(game_state, &wordgame_font, &stats_font);
 
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
-    DrawText(fpsText, 10, 10, 15, BLACK);
+    //DrawText(fpsText, 10, 10, 15, BLACK);
     free(fpsText);
 
     EndDrawing();
@@ -151,6 +153,7 @@ int main(void) {
   UnloadFont(stats_font);
 
   DestroyGameState(game_state);
+  DestroySessionState(session_state);
 
   return 0;
 }

@@ -4,6 +4,7 @@
 #include "bag.h"
 #include "constants.h"
 #include "game_state.h"
+#include "session_state.h"
 #include "square.h"
 #include "tetrominos.h"
 
@@ -598,7 +599,7 @@ void CheckForLineClears(GameState *game_state) {
   // printf("\n");
 }
 
-void UpdateAfterClearedLines(GameState *game_state) {
+void UpdateAfterClearedLines(GameState *game_state, SessionState *session_state) {
   printf("UpdateAfterClearedLines\n");
   int cleared_lines = 0;
   for (int row = PLAYFIELD_HEIGHT - 1; row >= 0; row--) {
@@ -634,6 +635,9 @@ void UpdateAfterClearedLines(GameState *game_state) {
   }
   if (game_state->num_lines >= MAX_LINES) {
     game_state->reached_line_cap = true;
+    if (game_state->total_score > session_state->high_score) {
+      session_state->high_score = game_state->total_score;
+    }
   }
 }
 
