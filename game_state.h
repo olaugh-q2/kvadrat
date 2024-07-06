@@ -82,6 +82,9 @@ typedef struct {
   int words_formed_at_frame[MAX_WORDS_PER_GAME];
   int words_formed_indices[MAX_WORDS_PER_GAME];
   int num_words_formed;
+
+  bool topped_out;
+  bool reached_line_cap;
 } GameState;
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);

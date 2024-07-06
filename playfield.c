@@ -97,7 +97,9 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
                       const Font *ui_font, const Font *letter_font) {
   DrawRectangle(300, 25, 200, 400, DARKGRAY);
 
-  for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
+  const int first_visible_row = PLAYFIELD_HEIGHT - VISIBLE_PLAYFIELD_HEIGHT;
+  for (int row = first_visible_row; row < PLAYFIELD_HEIGHT; row++) {
+    int display_row = row - first_visible_row;
     bool cleared_line = game_state->cleared_lines[row];
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       Color color = BLACK;
@@ -141,12 +143,13 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
           break;
         }
       }
-      DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, color);
+      DrawRectangle(301 + col * 20, 26 + display_row * 20, 18, 18, color);
       if (square & GHOST_MASK) {
         assert((square & ACTIVE_MASK) == 0);
         assert((square & PLACED_MASK) == 0);
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18, Fade(WHITE, 0.4f));
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+        DrawRectangle(301 + col * 20, 26 + display_row * 20, 18, 18,
+                      Fade(WHITE, 0.4f));
+        DrawRectangle(301 + col * 20 + 2, 26 + display_row * 20 + 2, 14, 14,
                       Fade(BLACK, 0.9f));
         const int ghost_distance =
             game_state->ghost_piece_row - game_state->active_piece_row;
@@ -155,19 +158,19 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         if (ghost_alpha > 1.0f) {
           ghost_alpha = 1.0f;
         }
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+        DrawRectangle(301 + col * 20, 26 + display_row * 20, 18, 18,
                       Fade(BLACK, 1.0 - ghost_alpha));
       }
       if (square & ACTIVE_MASK) {
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+        DrawRectangle(301 + col * 20, 26 + display_row * 20, 18, 18,
                       Fade(LIGHTGRAY, 0.4f));
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+        DrawRectangle(301 + col * 20 + 2, 26 + display_row * 20 + 2, 14, 14,
                       Fade(WHITE, 0.1f));
       }
       if (square & PLACED_MASK) {
-        DrawRectangle(301 + col * 20, 26 + row * 20, 18, 18,
+        DrawRectangle(301 + col * 20, 26 + display_row * 20, 18, 18,
                       Fade(LIGHTGRAY, 0.5f));
-        DrawRectangle(301 + col * 20 + 2, 26 + row * 20 + 2, 14, 14,
+        DrawRectangle(301 + col * 20 + 2, 26 + display_row * 20 + 2, 14, 14,
                       Fade(BLACK, 0.1f));
       }
       const int word_id = game_state->horizontal_word_ids[row][col];
@@ -208,7 +211,7 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         }
         */
         if (!cleared_line) {
-          DrawRectangle(300 + col * 20, 25 + row * 20, 20, 20, WHITE);
+          DrawRectangle(300 + col * 20, 25 + display_row * 20, 20, 20, WHITE);
         }
       }
       Color word_color = BLACK;
@@ -233,12 +236,13 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
           word_color = PlayfieldGetColorForScore(word_score);
         }
         if (line_clear_after_flash) {
-          DrawRectangle(301 + col * 20, 25 + row * 20, 20, 20, word_color);
+          DrawRectangle(301 + col * 20, 25 + display_row * 20, 20, 20,
+                        word_color);
         }
         Color text_color = line_clear_after_flash ? WHITE : word_color;
         DrawTextEx(*letter_font, text,
                    (Vector2){301 + col * 20 + 9 - text_size.x / 2,
-                             26 + row * 20 + 9 - text_size.y / 2},
+                             26 + display_row * 20 + 9 - text_size.y / 2},
                    12, 1, text_color);
       }
     }
@@ -246,7 +250,8 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
       if (game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY) {
         const float flash_alpha =
             1.0f * game_state->line_clear_counter / LINE_CLEAR_FLASH_DELAY;
-        DrawRectangle(300, 26 + row * 20, 200, 20, Fade(WHITE, flash_alpha));
+        DrawRectangle(300, 26 + display_row * 20, 200, 20,
+                      Fade(WHITE, flash_alpha));
       }
     }
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -260,14 +265,16 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
         Color word_color = PlayfieldGetColorForScore(
             game_state->horizontal_word_scores[row][col]);
         if (game_state->cleared_lines[row] &&
-            game_state->line_clear_counter < LINE_CLEAR_FLASH_DELAY + LINE_CLEAR_COLLAPSE_DELAY) {
+            game_state->line_clear_counter <
+                LINE_CLEAR_FLASH_DELAY + LINE_CLEAR_COLLAPSE_DELAY) {
           word_color = WHITE;
         }
         const int word_length = end_col - col + 1;
         // Draw a box with rounded corners
-        DrawRectangleRoundedLines(
-            (Rectangle){300+2.5 + col * 20, 25 +2.5 + row * 20, 20 * word_length-5, 20-5},
-            0.5, 4, 2.5, word_color);
+        DrawRectangleRoundedLines((Rectangle){300 + 2.5 + col * 20,
+                                              25 + 2.5 + display_row * 20,
+                                              20 * word_length - 5, 20 - 5},
+                                  0.5, 4, 2.5, word_color);
       }
     }
   }
@@ -278,6 +285,45 @@ void DisplayPlayfield(const Playfield *playfield, const GameState *game_state,
     Vector2 text_size = MeasureTextEx(*ui_font, paused_text, 24, 1);
     DrawTextEx(*ui_font, paused_text, (Vector2){400 - text_size.x / 2, 180}, 24,
                1.0, GREEN);
+    DrawLine(375, 210, 425, 210, LIGHTGRAY);
+    const char *resumed_text = "PRESS START TO RESUME";
+    Vector2 resumed_text_size = MeasureTextEx(*ui_font, resumed_text, 16, 1);
+    DrawTextEx(*ui_font, resumed_text,
+               (Vector2){400 - resumed_text_size.x / 2, 220}, 16, 1.0,
+               LIGHTGRAY);
+  }
+  if (game_state->topped_out || game_state->reached_line_cap) {
+    DrawRectangle(300, 25, 200, 400, Fade(BLACK, 0.85f));
+    const char *game_over_text = "GAME OVER";
+    Vector2 text_size = MeasureTextEx(*ui_font, game_over_text, 24, 1);
+    DrawTextEx(*ui_font, game_over_text, (Vector2){400 - text_size.x / 2, 160},
+               24, 1.0, RED);
+
+    if (game_state->topped_out) {
+      const char *topped_out_text = "TOPPED OUT";
+      Vector2 topped_out_text_size =
+          MeasureTextEx(*ui_font, topped_out_text, 16, 1);
+      DrawTextEx(*ui_font, topped_out_text,
+                 (Vector2){400 - topped_out_text_size.x / 2, 185}, 16, 1.0,
+                 LIGHTGRAY);
+    } else {
+      char *reached_line_cap_text;
+      asprintf(&reached_line_cap_text, "%d LINES", MAX_LINES);
+      Vector2 reached_line_cap_text_size =
+          MeasureTextEx(*ui_font, reached_line_cap_text, 16, 1);
+      DrawTextEx(*ui_font, reached_line_cap_text,
+                 (Vector2){400 - reached_line_cap_text_size.x / 2, 185}, 16,
+                 1.0, LIGHTGRAY);
+      free(reached_line_cap_text);
+    }
+
+    DrawLine(375, 210, 425, 210, LIGHTGRAY);
+
+    const char *restart_text = "PRESS START TO PLAY AGAIN";
+    Vector2 restart_text_size = MeasureTextEx(*ui_font, restart_text, 16, 1);
+    DrawTextEx(*ui_font, restart_text,
+               (Vector2){400 - restart_text_size.x / 2, 220}, 16, 1.0,
+               LIGHTGRAY);
   }
 
   // Draw DARKGREY border around the playfield

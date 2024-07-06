@@ -46,12 +46,15 @@ int main(void) {
     game_state->checked_line_clears_this_frame = false;
     UpdateLateralMovementIntent(game_state);
 
-    CheckWhetherPaused(game_state);
-    if (!game_state->paused) {
+    if (!game_state->topped_out && !game_state->reached_line_cap) {
+      CheckWhetherPaused(game_state);
+    }
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap) {
       game_state->unpaused_frame_counter++;
     }
 
-    if (!game_state->paused && game_state->soft_locking) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->soft_locking) {
       // printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
@@ -69,7 +72,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && game_state->locking_piece) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->locking_piece) {
       // printf("locking piece\n");
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
@@ -80,7 +84,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && game_state->clearing_lines) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->clearing_lines) {
       // printf("clearing lines\n");
       game_state->line_clear_counter++;
       // printf("line clear counter: %d\n", game_state->line_clear_counter);
@@ -93,8 +98,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && !game_state->clearing_lines &&
-        !game_state->locking_piece) {
+    if (!game_state->paused && !game_state->topped_out &&
+        !game_state->clearing_lines && !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);
@@ -112,7 +117,8 @@ int main(void) {
 
     // There is no active piece while clearing lines: the locked piece is now
     // placed and there is a delay before spawning a new piece.
-    if (!game_state->locking_piece && !game_state->clearing_lines) {
+    if (!game_state->locking_piece && !game_state->clearing_lines &&
+        !game_state->topped_out && !game_state->reached_line_cap) {
       CopyActivePieceToPlayfield(game_state, playfield);
       CopyGhostPieceToPlayfield(game_state, playfield);
     }

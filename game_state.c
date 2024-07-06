@@ -39,10 +39,10 @@ GameState *CreateInitialGameState(const char *bags_filename,
   for (int i = 0; i < 4; i++) {
     letters[i] = game_state->word_letters[0][i];
   }
-  //CreatePiece(game_state->active_piece_index, game_state->active_piece,
-  //            ROTATION_0, letters);
-  //game_state->active_piece_row = 0;
-  //game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
+  // CreatePiece(game_state->active_piece_index, game_state->active_piece,
+  //             ROTATION_0, letters);
+  // game_state->active_piece_row = 0;
+  // game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
   game_state->pieces_until_redraw = 1;
   SpawnNewPiece(game_state);
 
@@ -99,6 +99,8 @@ GameState *CreateInitialGameState(const char *bags_filename,
   game_state->num_words_formed = 0;
   game_state->checked_line_clears_this_frame = false;
 
+  game_state->topped_out = false;
+  game_state->reached_line_cap = false;
   return game_state;
 }
 
@@ -149,22 +151,22 @@ void DrawWordsFromBag(GameState *game_state, int start_index) {
           game_state->bags[bag_index * (28 * 5 + 1) + i * 5 + j] - 'A' + 1;
     }
   }
-/*  
-  char swum[5] = "SWUM";
-  char rulb[5] = "RULB";
-  char zoea[5] = "ZOEA";
-  char abpu[5] = "ABPU";
-  char quag[5] = "QUAG";
-  char amen[5] = "AMEN";
-  for (int i = 0; i < 4; i++) {
-    game_state->word_letters[start_index + 0][i] = swum[i] - 'A' + 1;
-    game_state->word_letters[start_index + 1][i] = rulb[i] - 'A' + 1;
-    game_state->word_letters[start_index + 2][i] = zoea[i] - 'A' + 1;
-    game_state->word_letters[start_index + 3][i] = abpu[i] - 'A' + 1;
-    game_state->word_letters[start_index + 4][i] = quag[i] - 'A' + 1;
-    game_state->word_letters[start_index + 5][i] = amen[i] - 'A' + 1;
-  }
-*/  
+  /*
+    char swum[5] = "SWUM";
+    char rulb[5] = "RULB";
+    char zoea[5] = "ZOEA";
+    char abpu[5] = "ABPU";
+    char quag[5] = "QUAG";
+    char amen[5] = "AMEN";
+    for (int i = 0; i < 4; i++) {
+      game_state->word_letters[start_index + 0][i] = swum[i] - 'A' + 1;
+      game_state->word_letters[start_index + 1][i] = rulb[i] - 'A' + 1;
+      game_state->word_letters[start_index + 2][i] = zoea[i] - 'A' + 1;
+      game_state->word_letters[start_index + 3][i] = abpu[i] - 'A' + 1;
+      game_state->word_letters[start_index + 4][i] = quag[i] - 'A' + 1;
+      game_state->word_letters[start_index + 5][i] = amen[i] - 'A' + 1;
+    }
+  */
   // TODO: shuffle
 }
 
@@ -179,14 +181,14 @@ void DrawRandomPieces(int piece_queue[14], int start_index) {
   for (int i = 0; i < 7; i++) {
     piece_queue[start_index + i] = bag[i];
   }
-/*  
-  piece_queue[start_index + 0] = J_PIECE;
-  piece_queue[start_index + 1] = J_PIECE;
-  piece_queue[start_index + 2] = I_PIECE;
-  piece_queue[start_index + 3] = J_PIECE;
-  piece_queue[start_index + 4] = O_PIECE;
-  piece_queue[start_index + 5] = J_PIECE;
-*/  
+  /*
+    piece_queue[start_index + 0] = J_PIECE;
+    piece_queue[start_index + 1] = J_PIECE;
+    piece_queue[start_index + 2] = I_PIECE;
+    piece_queue[start_index + 3] = J_PIECE;
+    piece_queue[start_index + 4] = O_PIECE;
+    piece_queue[start_index + 5] = J_PIECE;
+  */
 }
 
 void CheckWhetherPaused(GameState *game_state) {
@@ -496,12 +498,23 @@ void SpawnNewPiece(GameState *game_state) {
   }
   CreatePiece(game_state->active_piece_index, game_state->active_piece,
               ROTATION_0, letters);
-  game_state->active_piece_row = 0;
+  game_state->active_piece_row = 1;
   game_state->active_piece_col = SpawnColumn(game_state->active_piece_index);
+  if (TestActivePieceCollision(game_state, game_state->active_piece_row,
+                               game_state->active_piece_col)) {
+    game_state->active_piece_row = 0;
+    if (TestActivePieceCollision(game_state, game_state->active_piece_row,
+                                 game_state->active_piece_col)) {
+      game_state->topped_out = true;
+    }
+  }
 
   game_state->gravity_counter = 0;
-  printf("game_state->num_pieces %d -> %d\n", game_state->num_pieces, game_state->num_pieces + 1);
-  game_state->num_pieces++;
+  if (!game_state->topped_out) {
+    printf("game_state->num_pieces %d -> %d\n", game_state->num_pieces,
+           game_state->num_pieces + 1);
+    game_state->num_pieces++;
+  }
 }
 
 void CheckForLineClears(GameState *game_state) {
@@ -605,6 +618,9 @@ void UpdateAfterClearedLines(GameState *game_state) {
   }
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     game_state->cleared_lines[row] = false;
+  }
+  if (game_state->num_lines >= MAX_LINES) {
+    game_state->reached_line_cap = true;
   }
 }
 

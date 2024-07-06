@@ -106,7 +106,7 @@ void DisplayStats(const GameState *game_state, const Font *label_font,
 
   DrawTextEx(*label_font, "TIME", (Vector2){220, 300}, 16, 1.0, BLACK);
   int time_total_thousandths = 1000 * game_state->unpaused_frame_counter / 60.0;
-  if (!game_state->paused) {
+  if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap) {
     time_total_thousandths += rand() % 3;
   }
   const int time_thousandths_part = time_total_thousandths % 1000;
