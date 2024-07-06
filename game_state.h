@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "constants.h"
 #include "kwg.h"
+#include "session_state.h"
 #include "square.h"
 
 #include <stdbool.h>
@@ -82,10 +83,14 @@ typedef struct {
   int words_formed_at_frame[MAX_WORDS_PER_GAME];
   int words_formed_indices[MAX_WORDS_PER_GAME];
   int num_words_formed;
+
+  bool topped_out;
+  bool reached_line_cap;
 } GameState;
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);
 
+void ResetGameState(GameState *game_state);
 void DestroyGameState(GameState *game_state);
 
 void LoadKwg(GameState *game_state, const char *filename);
@@ -97,6 +102,8 @@ void DrawRandomPieces(int piece_queue[14], int start_index);
 void DrawWordsFromBag(GameState *game_state, int start_index);
 
 void CheckWhetherPaused(GameState *game_state);
+
+void MaybeRestartGame(GameState *game_state);
 
 void UpdateLateralMovementIntent(GameState *game_state);
 
@@ -124,7 +131,7 @@ void SpawnNewPiece(GameState *game_state);
 
 void CheckForLineClears(GameState *game_state);
 
-void UpdateAfterClearedLines(GameState *game_state);
+void UpdateAfterClearedLines(GameState *game_state, SessionState *session_state);
 
 void MarkFormedWords(GameState *game_state);
 

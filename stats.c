@@ -2,9 +2,11 @@
 
 #include "constants.h"
 #include "game_state.h"
+#include "session_state.h"
 #include "stats.h"
 
-void DisplayStats(const GameState *game_state, const Font *label_font,
+void DisplayStats(const GameState *game_state,
+                  const SessionState *session_state, const Font *label_font,
                   const Font *stats_font) {
   DrawTextEx(*label_font, "PIECES", (Vector2){220, 100}, 16, 1.0, BLACK);
 
@@ -106,7 +108,8 @@ void DisplayStats(const GameState *game_state, const Font *label_font,
 
   DrawTextEx(*label_font, "TIME", (Vector2){220, 300}, 16, 1.0, BLACK);
   int time_total_thousandths = 1000 * game_state->unpaused_frame_counter / 60.0;
-  if (!game_state->paused) {
+  if (!game_state->paused && !game_state->topped_out &&
+      !game_state->reached_line_cap) {
     time_total_thousandths += rand() % 3;
   }
   const int time_thousandths_part = time_total_thousandths % 1000;
@@ -145,4 +148,12 @@ printf("time_minutes: %d\n", time_minutes);
 */
   free(time_thousandths_text);
   free(time_minutes_and_seconds_text);
+
+  DrawTextEx(*label_font, "HIGH SCORE", (Vector2){10, 26}, 16, 1.0, BLACK);
+  char *high_score_text = NULL;
+  asprintf(&high_score_text, "%d", session_state->high_score);
+  Vector2 high_score_text_size =
+      MeasureTextEx(*stats_font, high_score_text, 32, 1);
+  DrawTextEx(*stats_font, high_score_text,
+             (Vector2){10 + 120 - high_score_text_size.x, 46}, 32, 1.0, BLACK);
 }

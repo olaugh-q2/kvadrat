@@ -6,6 +6,7 @@
 #include "inputs.h"
 #include "next.h"
 #include "playfield.h"
+#include "session_state.h"
 #include "stats.h"
 
 #include <assert.h>
@@ -37,6 +38,7 @@ int main(void) {
 
   SetTargetFPS(60);
   GameState *game_state = CreateInitialGameState("csw21-bags.txt", "CSW21.kwg");
+  SessionState *session_state = CreateSessionState();
 
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -46,12 +48,17 @@ int main(void) {
     game_state->checked_line_clears_this_frame = false;
     UpdateLateralMovementIntent(game_state);
 
-    CheckWhetherPaused(game_state);
-    if (!game_state->paused) {
+    if (!game_state->topped_out && !game_state->reached_line_cap) {
+      CheckWhetherPaused(game_state);
+    } else {
+      MaybeRestartGame(game_state);
+    }
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap) {
       game_state->unpaused_frame_counter++;
     }
 
-    if (!game_state->paused && game_state->soft_locking) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->soft_locking) {
       // printf("soft locking\n");
       game_state->soft_lock_counter++;
       if (game_state->soft_lock_counter >= SOFT_LOCK_DELAY) {
@@ -69,7 +76,8 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && game_state->locking_piece) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->locking_piece) {
       // printf("locking piece\n");
       UpdateLockingPiece(game_state);
       if (!game_state->locking_piece) {
@@ -80,21 +88,22 @@ int main(void) {
       }
     }
 
-    if (!game_state->paused && game_state->clearing_lines) {
+    if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap &&
+        game_state->clearing_lines) {
       // printf("clearing lines\n");
       game_state->line_clear_counter++;
       // printf("line clear counter: %d\n", game_state->line_clear_counter);
       if (game_state->line_clear_counter >= LINE_CLEAR_DELAY) {
         game_state->line_clear_counter = 0;
         game_state->clearing_lines = false;
-        UpdateAfterClearedLines(game_state);
+        UpdateAfterClearedLines(game_state, session_state);
         MarkFormedWords(game_state);
         SpawnNewPiece(game_state);
       }
     }
 
-    if (!game_state->paused && !game_state->clearing_lines &&
-        !game_state->locking_piece) {
+    if (!game_state->paused && !game_state->topped_out &&
+        !game_state->clearing_lines && !game_state->locking_piece) {
       MaybeMovePieceLaterally(game_state);
 
       UpdateRotationIntent(game_state);
@@ -112,7 +121,8 @@ int main(void) {
 
     // There is no active piece while clearing lines: the locked piece is now
     // placed and there is a delay before spawning a new piece.
-    if (!game_state->locking_piece && !game_state->clearing_lines) {
+    if (!game_state->locking_piece && !game_state->clearing_lines &&
+        !game_state->topped_out && !game_state->reached_line_cap) {
       CopyActivePieceToPlayfield(game_state, playfield);
       CopyGhostPieceToPlayfield(game_state, playfield);
     }
@@ -123,13 +133,13 @@ int main(void) {
     DisplayNext(game_state, &ui_font, &wordgame_font);
     DisplayInputs(&ui_font);
 
-    DisplayStats(game_state, &ui_font, &stats_font);
+    DisplayStats(game_state, session_state, &ui_font, &stats_font);
 
     DisplayFormedWords(game_state, &wordgame_font, &stats_font);
 
     char *fpsText = NULL;
     asprintf(&fpsText, "%02d", GetFPS());
-    DrawText(fpsText, 10, 10, 15, BLACK);
+    //DrawText(fpsText, 10, 10, 15, BLACK);
     free(fpsText);
 
     EndDrawing();
@@ -143,6 +153,7 @@ int main(void) {
   UnloadFont(stats_font);
 
   DestroyGameState(game_state);
+  DestroySessionState(session_state);
 
   return 0;
 }
