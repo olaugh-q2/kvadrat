@@ -89,6 +89,7 @@ typedef struct {
 
 GameState *CreateInitialGameState(const char *bags_filename, const char *kwg_filename);
 
+void ResetGameState(GameState *game_state);
 void DestroyGameState(GameState *game_state);
 
 void LoadKwg(GameState *game_state, const char *filename);
@@ -100,6 +101,8 @@ void DrawRandomPieces(int piece_queue[14], int start_index);
 void DrawWordsFromBag(GameState *game_state, int start_index);
 
 void CheckWhetherPaused(GameState *game_state);
+
+void MaybeRestartGame(GameState *game_state);
 
 void UpdateLateralMovementIntent(GameState *game_state);
 

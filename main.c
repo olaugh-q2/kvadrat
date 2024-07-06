@@ -48,6 +48,8 @@ int main(void) {
 
     if (!game_state->topped_out && !game_state->reached_line_cap) {
       CheckWhetherPaused(game_state);
+    } else {
+      MaybeRestartGame(game_state);
     }
     if (!game_state->paused && !game_state->topped_out && !game_state->reached_line_cap) {
       game_state->unpaused_frame_counter++;

@@ -15,6 +15,28 @@ GameState *CreateInitialGameState(const char *bags_filename,
                                   const char *kwg_filename) {
   GameState *game_state = (GameState *)malloc(sizeof(GameState));
 
+  LoadKwg(game_state, kwg_filename);
+  LoadBags(game_state, bags_filename);
+  ResetGameState(game_state);
+
+  game_state->hard_drop_sound = LoadSound("harddrop.ogg");
+  game_state->soft_drop_sound = LoadSound("floor.ogg");
+  game_state->line_clear_sound = LoadSound("clearline.mp3");
+  game_state->quad_clear_sound = LoadSound("clearquad.mp3");
+  game_state->rotate_sound = LoadSound("rotate.ogg");
+  game_state->move_wave = LoadWave("move.ogg");
+  for (int i = 0; i < 10; i++) {
+    game_state->move_sounds[i] = LoadSoundFromWave(game_state->move_wave);
+    SetSoundVolume(game_state->move_sounds[i], 0.4f);
+  }
+  game_state->move_sound_index = 0;
+
+  game_state->pause_sound = LoadSound("pause.mp3");
+
+  return game_state;
+}
+
+void ResetGameState(GameState *game_state) {
   game_state->num_lines = 0;
   game_state->num_pieces = 0;
   game_state->num_words = 0;
@@ -22,9 +44,6 @@ GameState *CreateInitialGameState(const char *bags_filename,
   game_state->total_score = 0;
   game_state->unpaused_frame_counter = 0;
 
-  LoadKwg(game_state, kwg_filename);
-
-  LoadBags(game_state, bags_filename);
   DrawWordsFromBag(game_state, 0);
   game_state->words_until_redraw = 1;
   for (int i = 0; i < PLAYFIELD_HEIGHT; i++) {
@@ -72,21 +91,7 @@ GameState *CreateInitialGameState(const char *bags_filename,
     game_state->cleared_lines[i] = false;
   }
 
-  game_state->hard_drop_sound = LoadSound("harddrop.ogg");
-  game_state->soft_drop_sound = LoadSound("floor.ogg");
-  game_state->line_clear_sound = LoadSound("clearline.mp3");
-  game_state->quad_clear_sound = LoadSound("clearquad.mp3");
-  game_state->rotate_sound = LoadSound("rotate.ogg");
-  game_state->move_wave = LoadWave("move.ogg");
-  for (int i = 0; i < 10; i++) {
-    game_state->move_sounds[i] = LoadSoundFromWave(game_state->move_wave);
-    SetSoundVolume(game_state->move_sounds[i], 0.4f);
-  }
-  game_state->move_sound_index = 0;
-
   game_state->paused = false;
-  game_state->pause_sound = LoadSound("pause.mp3");
-
   for (int row = 0; row < PLAYFIELD_HEIGHT; row++) {
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       game_state->horizontal_word_ids[row][col] = 0;
@@ -101,10 +106,10 @@ GameState *CreateInitialGameState(const char *bags_filename,
 
   game_state->topped_out = false;
   game_state->reached_line_cap = false;
-  return game_state;
 }
 
 void DestroyGameState(GameState *game_state) {
+  //printf("DestroyGameState\n");
   UnloadSound(game_state->hard_drop_sound);
   UnloadSound(game_state->soft_drop_sound);
   UnloadSound(game_state->line_clear_sound);
@@ -117,6 +122,7 @@ void DestroyGameState(GameState *game_state) {
   UnloadSound(game_state->pause_sound);
   free(game_state->bags);
   free(game_state);
+  //printf("success!");
 }
 
 void LoadKwg(GameState *game_state, const char *filename) {
@@ -197,6 +203,14 @@ void CheckWhetherPaused(GameState *game_state) {
     if (game_state->paused) {
       PlaySound(game_state->pause_sound);
     }
+  }
+}
+
+void MaybeRestartGame(GameState *game_state) {
+  printf("MaybeRestartGame\n");
+  if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
+    printf("restarting game");
+    ResetGameState(game_state);
   }
 }
 
@@ -572,7 +586,6 @@ void CheckForLineClears(GameState *game_state) {
     }
   }
   game_state->num_lines += num_lines_cleared;
-  game_state->total_score += score_sum;
 
   if (num_lines_cleared > 0) {
     if (num_lines_cleared == 4) {
@@ -710,6 +723,7 @@ void MarkBestHorizontalWords(GameState *game_state, uint32_t dawg_root,
     for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
       this_score_sum += word_scores[col];
     }
+    /*
     if (this_score_sum > 0) {
       printf("row %d: ", row);
       for (int col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -736,6 +750,7 @@ void MarkBestHorizontalWords(GameState *game_state, uint32_t dawg_root,
       }
       printf("\n");
     }
+    */
     // printf("this_score_sum: %d, best_score_sum: %d\n", this_score_sum,
     //        best_score_sum);
     if (this_score_sum > best_score_sum) {
