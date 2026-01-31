@@ -17,7 +17,7 @@ const LATERAL_MOVEMENT_REPEAT_DELAY = 2;
 const ROTATION_DELAY = 30;
 const SOFT_LOCK_DELAY = 20;
 const ENTRY_DELAY = 6;
-const LINE_CLEAR_DELAY = 30;
+const LINE_CLEAR_DELAY = 15;
 const GRAVITY_DELAY = 12;
 const SOFT_DROP_DELAY = 1;
 
@@ -566,6 +566,8 @@ class GameState {
     markFormedWords() {
         if (!kwg) return;
 
+        const startTime = performance.now();
+
         for (let row = 0; row < PLAYFIELD_HEIGHT; row++) {
             // Reset word markings for this row
             for (let col = 0; col < PLAYFIELD_WIDTH; col++) {
@@ -590,6 +592,9 @@ class GameState {
                 this.horizontalWordScores[row][col] = bestScores[col];
             }
         }
+
+        const elapsed = performance.now() - startTime;
+        console.log(`Word finding: ${elapsed.toFixed(1)}ms`);
     }
 
     // Recursive word finding - matches MarkBestHorizontalWords from game_state.c
