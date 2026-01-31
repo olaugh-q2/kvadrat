@@ -1,7 +1,7 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 22:28 UTC';
+const BUILD_TIME = '2026-01-31 23:15 UTC';
 
 // Debug: track actual frame rate
 let frameCount = 0;
@@ -278,7 +278,7 @@ async function loadAssets() {
         loadingText.textContent = 'Loading dictionary...';
         loadingBar.style.width = '20%';
 
-        const kwgResponse = await fetch('CSW21.kwg');
+        const kwgResponse = await fetch('CSW21-dawg.kwg');
         if (!kwgResponse.ok) throw new Error('Failed to load dictionary');
         const kwgBuffer = await kwgResponse.arrayBuffer();
         kwg = new KWG(kwgBuffer);
