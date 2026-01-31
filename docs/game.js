@@ -1034,21 +1034,35 @@ function drawGhostCell(col, row, piece, letter) {
     }
 }
 
+// Piece preview offsets to center them nicely (row offset, col offset)
+const PREVIEW_OFFSETS = {
+    [I_PIECE]: [-1, 0],    // I is at row 1, shift up
+    [J_PIECE]: [0, 0.5],
+    [L_PIECE]: [0, 0.5],
+    [O_PIECE]: [-1, 0],    // O is at rows 1-2, cols 1-2
+    [S_PIECE]: [0, 0.5],
+    [T_PIECE]: [0, 0.5],
+    [Z_PIECE]: [0, 0.5]
+};
+
 function renderNext() {
-    const previewSize = cellSize * 0.75;
+    const previewSize = cellSize * 0.7;
+    const slotHeight = previewSize * 2.2;
+
     nextCtx.fillStyle = '#16213e';
     nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
 
     for (let i = 0; i < 5 && i < gameState.pieceQueue.length; i++) {
         const piece = gameState.pieceQueue[i];
         const shape = PIECE_SHAPES[piece][ROTATION_0];
-        const offsetY = i * (previewSize * 2.5);
+        const [rowOff, colOff] = PREVIEW_OFFSETS[piece];
+        const slotY = i * slotHeight + 5;
         const letters = gameState.wordLetters[i] || [0, 0, 0, 0];
 
         for (let j = 0; j < 4; j++) {
             const [dr, dc] = shape[j];
-            const x = dc * previewSize + previewSize * 0.3;
-            const y = dr * previewSize + offsetY;
+            const x = (dc + colOff) * previewSize + 2;
+            const y = (dr + rowOff) * previewSize + slotY;
 
             nextCtx.fillStyle = PIECE_COLORS[piece];
             nextCtx.fillRect(x + 1, y + 1, previewSize - 2, previewSize - 2);
@@ -1317,7 +1331,7 @@ function resizeCanvas() {
     const container = document.getElementById('game-container');
     const isMobile = window.innerWidth <= 700;
     const maxWidth = isMobile ? container.clientWidth - 20 : container.clientWidth - 200;
-    const maxHeight = isMobile ? container.clientHeight - 200 : container.clientHeight - 50;
+    const maxHeight = isMobile ? container.clientHeight - 250 : container.clientHeight - 50;
 
     const widthBasedSize = Math.floor(maxWidth / PLAYFIELD_WIDTH);
     const heightBasedSize = Math.floor(maxHeight / VISIBLE_HEIGHT);
@@ -1328,9 +1342,10 @@ function resizeCanvas() {
     canvas.width = PLAYFIELD_WIDTH * cellSize;
     canvas.height = VISIBLE_HEIGHT * cellSize;
 
-    const previewSize = cellSize * 0.75;
-    nextCanvas.width = previewSize * 4.5;
-    nextCanvas.height = previewSize * 12.5;
+    const previewSize = cellSize * 0.7;
+    const slotHeight = previewSize * 2.2;
+    nextCanvas.width = previewSize * 4 + 4;
+    nextCanvas.height = slotHeight * 5 + 10;
 }
 
 // ============================================================================
