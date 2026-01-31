@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Kvadrat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            padding: 10px;
+        }
+
+        #game-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        #main-canvas {
+            border: 3px solid #4a4a6a;
+            border-radius: 5px;
+            background: #16213e;
+        }
+
+        #side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-section {
+            background: #16213e;
+            border: 2px solid #4a4a6a;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .panel-title {
+            color: #e94560;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #next-canvas {
+            background: #16213e;
+        }
+
+        #words-display {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .word-entry {
+            color: #0f3460;
+            padding: 2px 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .word-entry.valid {
+            background: #4ade80;
+            color: #166534;
+        }
+
+        /* Touch controls */
+        #touch-controls {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .touch-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .touch-btn {
+            width: 70px;
+            height: 50px;
+            background: linear-gradient(145deg, #4a4a6a, #3a3a5a);
+            border: 2px solid #6a6a8a;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .touch-btn:active {
+            background: linear-gradient(145deg, #3a3a5a, #2a2a4a);
+            transform: scale(0.95);
+        }
+
+        .touch-btn.wide {
+            width: 150px;
+        }
+
+        #pause-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #pause-overlay h2 {
+            color: #e94560;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        #pause-overlay p {
+            color: #fff;
+            font-size: 18px;
+            margin: 5px 0;
+        }
+
+        #pause-overlay button {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 18px;
+            background: #e94560;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #pause-overlay button:hover {
+            background: #ff6b8a;
+        }
+
+        .game-over #pause-overlay h2 {
+            color: #ff4444;
+        }
+
+        .game-won #pause-overlay h2 {
+            color: #4ade80;
+        }
+
+        /* Desktop instructions */
+        #instructions {
+            color: #8888aa;
+            font-size: 11px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 600px) {
+            #game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #side-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .panel-section {
+                padding: 8px;
+            }
+
+            #touch-controls {
+                display: flex;
+                flex-direction: column;
+            }
+
+            #instructions {
+                display: none;
+            }
+        }
+
+        @media (min-width: 601px) {
+            #touch-controls {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-area">
+            <canvas id="main-canvas"></canvas>
+            <div id="side-panel">
+                <div class="panel-section">
+                    <div class="panel-title">Score</div>
+                    <div class="stat-value" id="score-display">0</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-title">Lines</div>
+                    <div class="stat-value" id="lines-display">0/40</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-title">Words</div>
+                    <div class="stat-value" id="words-display">0</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-title">High Score</div>
+                    <div class="stat-value" id="high-score-display">0</div>
+                </div>
+                <div class="panel-section">
+                    <div class="panel-title">Next</div>
+                    <canvas id="next-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="touch-controls">
+            <div class="touch-row">
+                <button class="touch-btn" id="btn-ccw">&#x21BA;</button>
+                <button class="touch-btn wide" id="btn-hard">DROP</button>
+                <button class="touch-btn" id="btn-cw">&#x21BB;</button>
+            </div>
+            <div class="touch-row">
+                <button class="touch-btn" id="btn-left">&#x25C0;</button>
+                <button class="touch-btn" id="btn-down">&#x25BC;</button>
+                <button class="touch-btn" id="btn-right">&#x25B6;</button>
+            </div>
+        </div>
+
+        <div id="instructions">
+            Arrow Keys: Move | Z/X: Rotate | Space: Hard Drop | P: Pause
+        </div>
+    </div>
+
+    <div id="pause-overlay">
+        <h2 id="overlay-title">PAUSED</h2>
+        <p id="overlay-score"></p>
+        <p id="overlay-lines"></p>
+        <p id="overlay-words"></p>
+        <button id="overlay-button">Resume</button>
+    </div>
+
+    <script src="words.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
