@@ -1,7 +1,7 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 23:21 UTC';
+const BUILD_TIME = '2026-01-31 23:29 UTC';
 
 // Debug: track actual frame rate
 let frameCount = 0;
@@ -28,7 +28,7 @@ const MINIMUM_WORD_SCORE = 40;
 const LATERAL_MOVEMENT_DELAY = 10;
 const LATERAL_MOVEMENT_REPEAT_DELAY = 2;
 const ROTATION_DELAY = 30;
-const SOFT_LOCK_DELAY = 20;
+const SOFT_LOCK_DELAY = 10;
 const ENTRY_DELAY = 1;
 const LINE_CLEAR_DELAY = 10;
 const GRAVITY_DELAY = 12;
@@ -1352,11 +1352,14 @@ function gameLoop(timestamp) {
     const debugEl = document.getElementById('debug-info');
     if (debugEl && gameState) {
         let debug = `FPS: ${currentFps}`;
-        if (gameState.lastWordFindTime !== undefined) {
-            debug += ` | Words: ${gameState.lastWordFindTime.toFixed(1)}ms`;
+        if (gameState.softLocking) {
+            debug += ` | Lock: ${gameState.softLockCounter}/${SOFT_LOCK_DELAY}`;
         }
         if (gameState.clearingLines) {
-            debug += ` | Clearing: ${gameState.lineClearCounter}`;
+            debug += ` | Clear: ${gameState.lineClearCounter}`;
+        }
+        if (gameState.lastWordFindTime !== undefined && gameState.lastWordFindTime > 0) {
+            debug += ` | Words: ${gameState.lastWordFindTime.toFixed(0)}ms`;
         }
         debugEl.textContent = debug;
     }
