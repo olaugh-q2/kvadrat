@@ -1,7 +1,12 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 22:22 UTC';
+const BUILD_TIME = '2026-01-31 22:28 UTC';
+
+// Debug: track actual frame rate
+let frameCount = 0;
+let lastFpsTime = 0;
+let currentFps = 0;
 
 // Show build time on page
 document.addEventListener('DOMContentLoaded', () => {
@@ -602,8 +607,7 @@ class GameState {
         }
 
         const elapsed = performance.now() - startTime;
-        const debugEl = document.getElementById('debug-info');
-        if (debugEl) debugEl.textContent = `Word finding: ${elapsed.toFixed(1)}ms`;
+        this.lastWordFindTime = elapsed;
     }
 
     // Recursive word finding - matches MarkBestHorizontalWords from game_state.c
@@ -828,15 +832,6 @@ class GameState {
             return;
         }
 
-        // Handle piece locking animation
-        if (this.locking) {
-            this.lockCounter--;
-            if (this.lockCounter <= 0) {
-                this.locking = false;
-            }
-            return;
-        }
-
         // Handle lateral movement
         if (this.lateralDirection !== 0) {
             this.lateralCounter++;
@@ -866,8 +861,6 @@ class GameState {
                 if (this.softLocking) {
                     this.softLockCounter++;
                     if (this.softLockCounter >= SOFT_LOCK_DELAY) {
-                        this.locking = true;
-                        this.lockCounter = ENTRY_DELAY;
                         this.lockPiece();
                     }
                 }
@@ -1269,30 +1262,8 @@ function setupTouchInput() {
 
         // If it was a tap (short duration, no significant movement)
         if (!hasMoved && touchDuration < 300) {
-            const touch = e.changedTouches[0];
-            const rect = canvas.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const canvasWidth = rect.width;
-
-            // Check for swipe up (hard drop)
-            const deltaY = touch.clientY - touchStartY;
-            if (deltaY < -cellSize * 1.5) {
-                gameState.hardDrop();
-                return;
-            }
-
-            // Tap on left 25% - rotate CCW
-            if (x < canvasWidth * 0.25) {
-                gameState.rotatePiece(-1);
-            }
-            // Tap on right 25% - rotate CW
-            else if (x > canvasWidth * 0.75) {
-                gameState.rotatePiece(1);
-            }
-            // Tap in middle - hard drop
-            else {
-                gameState.hardDrop();
-            }
+            // Tap anywhere = rotate clockwise
+            gameState.rotatePiece(1);
         } else {
             // Check for swipe up (hard drop)
             const touch = e.changedTouches[0];
@@ -1370,12 +1341,31 @@ let lastFrameTime = 0;
 const frameInterval = 1000 / 60;
 
 function gameLoop(timestamp) {
-    if (timestamp - lastFrameTime >= frameInterval) {
-        if (gameState) {
-            gameState.update();
-        }
-        lastFrameTime = timestamp;
+    // Calculate FPS
+    frameCount++;
+    if (timestamp - lastFpsTime >= 1000) {
+        currentFps = frameCount;
+        frameCount = 0;
+        lastFpsTime = timestamp;
     }
+    // Update debug display
+    const debugEl = document.getElementById('debug-info');
+    if (debugEl && gameState) {
+        let debug = `FPS: ${currentFps}`;
+        if (gameState.lastWordFindTime !== undefined) {
+            debug += ` | Words: ${gameState.lastWordFindTime.toFixed(1)}ms`;
+        }
+        if (gameState.clearingLines) {
+            debug += ` | Clearing: ${gameState.lineClearCounter}`;
+        }
+        debugEl.textContent = debug;
+    }
+
+    // Update game state every frame (not throttled)
+    if (gameState) {
+        gameState.update();
+    }
+
     render();
     requestAnimationFrame(gameLoop);
 }
