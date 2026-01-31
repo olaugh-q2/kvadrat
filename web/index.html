@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            touch-action: manipulation;
+            touch-action: none;
         }
 
         html, body {
@@ -20,6 +20,47 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        #loading-screen h1 {
+            color: #e94560;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        #loading-screen p {
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 10px;
+            background: #2a2a4a;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: #e94560;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
         #game-container {
             display: flex;
             flex-direction: column;
@@ -28,110 +69,87 @@
             height: 100%;
             width: 100%;
             padding: 10px;
+            position: relative;
         }
 
         #game-area {
             display: flex;
             align-items: flex-start;
             gap: 20px;
+            position: relative;
+        }
+
+        #play-area-wrapper {
+            position: relative;
         }
 
         #main-canvas {
             border: 3px solid #4a4a6a;
             border-radius: 5px;
             background: #16213e;
+            display: block;
+        }
+
+        /* Touch rotation zones - visible on mobile */
+        .rotate-zone {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 25%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .rotate-zone-left {
+            left: 0;
+            background: linear-gradient(to right, rgba(186, 14, 245, 0.15), transparent);
+            border-radius: 5px 0 0 5px;
+        }
+
+        .rotate-zone-right {
+            right: 0;
+            background: linear-gradient(to left, rgba(186, 14, 245, 0.15), transparent);
+            border-radius: 0 5px 5px 0;
+        }
+
+        .rotate-icon {
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
         }
 
         #side-panel {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
         }
 
         .panel-section {
             background: #16213e;
             border: 2px solid #4a4a6a;
             border-radius: 5px;
-            padding: 10px;
+            padding: 8px 12px;
         }
 
         .panel-title {
             color: #e94560;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             text-transform: uppercase;
         }
 
         .stat-value {
             color: #fff;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
         }
 
         #next-canvas {
             background: #16213e;
-        }
-
-        #words-display {
-            max-height: 150px;
-            overflow-y: auto;
-            font-size: 12px;
-        }
-
-        .word-entry {
-            color: #0f3460;
-            padding: 2px 5px;
-            margin: 2px 0;
-            border-radius: 3px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .word-entry.valid {
-            background: #4ade80;
-            color: #166534;
-        }
-
-        /* Touch controls */
-        #touch-controls {
-            display: none;
-            width: 100%;
-            max-width: 400px;
-            margin-top: 15px;
-            gap: 10px;
-        }
-
-        .touch-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .touch-btn {
-            width: 70px;
-            height: 50px;
-            background: linear-gradient(145deg, #4a4a6a, #3a3a5a);
-            border: 2px solid #6a6a8a;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .touch-btn:active {
-            background: linear-gradient(145deg, #3a3a5a, #2a2a4a);
-            transform: scale(0.95);
-        }
-
-        .touch-btn.wide {
-            width: 150px;
         }
 
         #pause-overlay {
@@ -141,7 +159,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 100;
             align-items: center;
             justify-content: center;
@@ -150,7 +168,7 @@
 
         #pause-overlay h2 {
             color: #e94560;
-            font-size: 48px;
+            font-size: 42px;
             margin-bottom: 20px;
         }
 
@@ -191,8 +209,18 @@
             text-align: center;
         }
 
+        /* Mobile touch hint */
+        #touch-hint {
+            display: none;
+            color: #6a6a8a;
+            font-size: 10px;
+            margin-top: 8px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
         /* Responsive styles */
-        @media (max-width: 600px) {
+        @media (max-width: 700px) {
             #game-area {
                 flex-direction: column;
                 align-items: center;
@@ -202,33 +230,55 @@
                 flex-direction: row;
                 flex-wrap: wrap;
                 justify-content: center;
+                gap: 8px;
             }
 
             .panel-section {
-                padding: 8px;
+                padding: 6px 10px;
             }
 
-            #touch-controls {
-                display: flex;
-                flex-direction: column;
+            .panel-title {
+                font-size: 10px;
+            }
+
+            .stat-value {
+                font-size: 16px;
             }
 
             #instructions {
                 display: none;
             }
-        }
 
-        @media (min-width: 601px) {
-            #touch-controls {
-                display: none !important;
+            #touch-hint {
+                display: block;
+            }
+
+            .rotate-zone {
+                display: flex;
             }
         }
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <h1>KVADRAT</h1>
+        <p id="loading-text">Loading dictionary...</p>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loading-bar-fill"></div>
+        </div>
+    </div>
+
     <div id="game-container">
         <div id="game-area">
-            <canvas id="main-canvas"></canvas>
+            <div id="play-area-wrapper">
+                <canvas id="main-canvas"></canvas>
+                <div class="rotate-zone rotate-zone-left">
+                    <span class="rotate-icon">&#x21BA;</span>
+                </div>
+                <div class="rotate-zone rotate-zone-right">
+                    <span class="rotate-icon">&#x21BB;</span>
+                </div>
+            </div>
             <div id="side-panel">
                 <div class="panel-section">
                     <div class="panel-title">Score</div>
@@ -253,21 +303,12 @@
             </div>
         </div>
 
-        <div id="touch-controls">
-            <div class="touch-row">
-                <button class="touch-btn" id="btn-ccw">&#x21BA;</button>
-                <button class="touch-btn wide" id="btn-hard">DROP</button>
-                <button class="touch-btn" id="btn-cw">&#x21BB;</button>
-            </div>
-            <div class="touch-row">
-                <button class="touch-btn" id="btn-left">&#x25C0;</button>
-                <button class="touch-btn" id="btn-down">&#x25BC;</button>
-                <button class="touch-btn" id="btn-right">&#x25B6;</button>
-            </div>
-        </div>
-
         <div id="instructions">
             Arrow Keys: Move | Z/X: Rotate | Space: Hard Drop | P: Pause
+        </div>
+
+        <div id="touch-hint">
+            Swipe: Move/Drop | Tap edges: Rotate
         </div>
     </div>
 
@@ -279,7 +320,6 @@
         <button id="overlay-button">Resume</button>
     </div>
 
-    <script src="words.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
