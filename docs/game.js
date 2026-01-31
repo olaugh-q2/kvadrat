@@ -37,15 +37,15 @@ const ROTATION_R = 1;
 const ROTATION_2 = 2;
 const ROTATION_L = 3;
 
-// Piece colors (matching original)
+// Piece colors (lightened for good contrast with black text)
 const PIECE_COLORS = {
     [I_PIECE]: '#00e6fb',
-    [J_PIECE]: '#281eff',
-    [L_PIECE]: '#ff6622',
-    [O_PIECE]: '#ffd835',
-    [S_PIECE]: '#30fd39',
-    [T_PIECE]: '#ba0ef5',
-    [Z_PIECE]: '#ff0638'
+    [J_PIECE]: '#6090ff',
+    [L_PIECE]: '#ff9944',
+    [O_PIECE]: '#ffdd44',
+    [S_PIECE]: '#55ff55',
+    [T_PIECE]: '#dd77ff',
+    [Z_PIECE]: '#ff6080'
 };
 
 // Letter point values (matching bag.h)
