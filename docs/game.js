@@ -1,7 +1,7 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 23:32 UTC';
+const BUILD_TIME = '2026-01-31 23:35 UTC';
 
 // Debug: track actual frame rate
 let frameCount = 0;
@@ -857,13 +857,14 @@ class GameState {
         this.gravityCounter++;
         if (this.gravityCounter >= gravityDelay) {
             this.gravityCounter = 0;
-            if (!this.dropPiece()) {
-                if (this.softLocking) {
-                    this.softLockCounter++;
-                    if (this.softLockCounter >= SOFT_LOCK_DELAY) {
-                        this.lockPiece();
-                    }
-                }
+            this.dropPiece();
+        }
+
+        // Handle soft lock (piece on ground) - count every frame, not every gravity tick
+        if (this.softLocking) {
+            this.softLockCounter++;
+            if (this.softLockCounter >= SOFT_LOCK_DELAY) {
+                this.lockPiece();
             }
         }
     }
