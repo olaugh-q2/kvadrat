@@ -594,7 +594,8 @@ class GameState {
         }
 
         const elapsed = performance.now() - startTime;
-        console.log(`Word finding: ${elapsed.toFixed(1)}ms`);
+        const debugEl = document.getElementById('debug-info');
+        if (debugEl) debugEl.textContent = `Word finding: ${elapsed.toFixed(1)}ms`;
     }
 
     // Recursive word finding - matches MarkBestHorizontalWords from game_state.c
