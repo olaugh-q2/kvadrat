@@ -1,6 +1,14 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
+const BUILD_TIME = '2026-01-31 22:15 UTC';
+
+// Show build time on page
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('build-time');
+    if (el) el.textContent = `Build: ${BUILD_TIME}`;
+});
+
 // ============================================================================
 // Constants
 // ============================================================================
