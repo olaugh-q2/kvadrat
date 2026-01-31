@@ -1,7 +1,7 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 22:15 UTC';
+const BUILD_TIME = '2026-01-31 22:22 UTC';
 
 // Show build time on page
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,8 +24,8 @@ const LATERAL_MOVEMENT_DELAY = 10;
 const LATERAL_MOVEMENT_REPEAT_DELAY = 2;
 const ROTATION_DELAY = 30;
 const SOFT_LOCK_DELAY = 20;
-const ENTRY_DELAY = 6;
-const LINE_CLEAR_DELAY = 15;
+const ENTRY_DELAY = 1;
+const LINE_CLEAR_DELAY = 10;
 const GRAVITY_DELAY = 12;
 const SOFT_DROP_DELAY = 1;
 
