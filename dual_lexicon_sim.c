@@ -279,6 +279,58 @@ int main(int argc, char *argv[]) {
   printf("Games where VODKA worst in IGNORANT: %d\n", games_vodka_worst_ignorant);
   printf("\n");
 
+  // Show top 10 racks with biggest swing
+  printf("TOP 10 RACKS (biggest swing where VODKA best in INFORMED, worst in IGNORANT):\n");
+  printf("Rank  Rack     Swing  VODKA_ign  VODKA_inf  Alt1_raw  Alt1_threat\n");
+  printf("----  -------  -----  ---------  ---------  --------  -----------\n");
+
+  // Re-run to collect top 10 (simple approach - just re-simulate)
+  typedef struct { char rack[8]; int swing; int vodka_ig; int vodka_in; int alt1_raw; int alt1_threat; } TopRack;
+  TopRack top10[10];
+  for (int i = 0; i < 10; i++) { top10[i].swing = -99999; top10[i].rack[0] = '\0'; }
+
+  srand(42);  // Fixed seed for reproducibility
+  for (int i = 0; i < 1000; i++) {
+    char rack[RACK_SIZE + 1];
+    generate_voka_rack(rack);
+    SimResult result = evaluate_position(&board, rack);
+
+    if (result.vodka_margin_informed >= 0 && result.vodka_margin_ignorant < 0) {
+      int swing = result.vodka_margin_informed - result.vodka_margin_ignorant;
+      // Insert into top10 if better than worst
+      int worst_idx = 0;
+      for (int j = 1; j < 10; j++) {
+        if (top10[j].swing < top10[worst_idx].swing) worst_idx = j;
+      }
+      if (swing > top10[worst_idx].swing) {
+        strncpy(top10[worst_idx].rack, rack, 7);
+        top10[worst_idx].rack[7] = '\0';
+        top10[worst_idx].swing = swing;
+        top10[worst_idx].vodka_ig = result.vodka_margin_ignorant;
+        top10[worst_idx].vodka_in = result.vodka_margin_informed;
+        top10[worst_idx].alt1_raw = result.plays[1].raw_score;
+        top10[worst_idx].alt1_threat = result.plays[1].threat;
+      }
+    }
+  }
+
+  // Sort top10 by swing descending
+  for (int i = 0; i < 9; i++) {
+    for (int j = i + 1; j < 10; j++) {
+      if (top10[j].swing > top10[i].swing) {
+        TopRack tmp = top10[i]; top10[i] = top10[j]; top10[j] = tmp;
+      }
+    }
+  }
+
+  for (int i = 0; i < 10 && top10[i].swing > 0; i++) {
+    printf("%4d  %s  %5d  %9d  %9d  %8d  %11d\n",
+           i + 1, top10[i].rack, top10[i].swing,
+           top10[i].vodka_ig, top10[i].vodka_in,
+           top10[i].alt1_raw, top10[i].alt1_threat);
+  }
+  printf("\n");
+
   if (best_swing <= 0) {
     printf("No position found where VODKA is best in informed AND worst in ignorant.\n");
     kwg_destroy(csw_kwg);
