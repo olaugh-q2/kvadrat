@@ -11,7 +11,7 @@
 
 #include "bag.h"
 #include "kwg.h"
-#include "session_state.h"
+#include "string_util.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -21,6 +21,66 @@
 
 #define BOARD_SIZE 15
 #define RACK_SIZE 7
+
+// Board representation
+typedef struct {
+  char tiles[BOARD_SIZE][BOARD_SIZE];  // 0 = empty, 'A'-'Z' = letter
+} Board;
+
+// Initialize empty board
+void board_init(Board *board) {
+  for (int r = 0; r < BOARD_SIZE; r++) {
+    for (int c = 0; c < BOARD_SIZE; c++) {
+      board->tiles[r][c] = 0;
+    }
+  }
+}
+
+// Place a word on the board
+void board_place_word(Board *board, const char *word, int row, int col, bool horizontal) {
+  int len = strlen(word);
+  for (int i = 0; i < len; i++) {
+    int r = horizontal ? row : row + i;
+    int c = horizontal ? col + i : col;
+    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+      board->tiles[r][c] = word[i];
+    }
+  }
+}
+
+// Display board using StringBuilder
+void board_to_string(const Board *board, const char *rack, StringBuilder *sb) {
+  string_builder_add_string(sb, "   ");
+  for (int c = 0; c < BOARD_SIZE; c++) {
+    string_builder_add_char(sb, 'A' + c);
+    string_builder_add_char(sb, ' ');
+  }
+  string_builder_add_char(sb, '\n');
+
+  string_builder_add_string(sb, "   ");
+  for (int c = 0; c < BOARD_SIZE; c++) {
+    string_builder_add_string(sb, "--");
+  }
+  string_builder_add_char(sb, '\n');
+
+  for (int r = 0; r < BOARD_SIZE; r++) {
+    string_builder_add_formatted_string(sb, "%2d|", r + 1);
+    for (int c = 0; c < BOARD_SIZE; c++) {
+      char tile = board->tiles[r][c];
+      if (tile) {
+        string_builder_add_char(sb, tile);
+      } else {
+        string_builder_add_char(sb, '.');
+      }
+      string_builder_add_char(sb, ' ');
+    }
+    string_builder_add_char(sb, '\n');
+  }
+
+  string_builder_add_string(sb, "\nRack: ");
+  string_builder_add_string(sb, rack);
+  string_builder_add_char(sb, '\n');
+}
 
 // Check if word is valid in KWG
 bool is_word_valid(const KWG *kwg, const char *word) {
@@ -79,39 +139,24 @@ int calc_word_score(const char *word) {
   return score;
 }
 
-// Check if a letter can extend a word (hook check)
-bool has_back_hook(const KWG *kwg, const char *word, char letter) {
-  char extended[20];
-  int len = strlen(word);
-  if (len >= 18) return false;
-
-  strcpy(extended, word);
-  extended[len] = letter;
-  extended[len + 1] = '\0';
-  return is_word_valid(kwg, extended);
-}
-
-// Simulation result for one rack
+// Simulation result
 typedef struct {
   char rack[RACK_SIZE + 1];
-
-  // Scores for playing VODKA in each mode
-  int vodka_ignorant_eval;   // VODKA score minus threat (using player's lexicon for opponent model)
-  int vodka_informed_eval;   // VODKA score minus threat (using opponent's actual lexicon)
-
-  // The difference tells us how much the mode matters
+  Board board;
+  int ignorant_eval;
+  int informed_eval;
   int eval_difference;
+  char best_play_ignorant[32];
+  char best_play_informed[32];
 } SimResult;
 
-// Generate a random rack containing V, O, K, A (for VODKA minus D which is on board)
+// Generate a random rack containing V, O, K, A
 void generate_voka_rack(char *rack) {
-  // Must have V, O, K, A (D is on board from ASTROID)
   rack[0] = 'V';
   rack[1] = 'O';
   rack[2] = 'K';
   rack[3] = 'A';
 
-  // Add 3 random letters from common tiles
   const char *pool = "EEEEAAAAIIIIOOOONNNNRRRRTTTTLLLLSSSSUUUU"
                      "DDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ";
   int pool_len = strlen(pool);
@@ -122,63 +167,26 @@ void generate_voka_rack(char *rack) {
   rack[RACK_SIZE] = '\0';
 }
 
-// Evaluate playing VODKA given the two simulation modes
-SimResult evaluate_vodka_play(const KWG *player_kwg, const KWG *opponent_kwg,
-                               const char *rack) {
+// Evaluate a position
+SimResult evaluate_position(const Board *board, const char *rack,
+                            int vodka_row, int vodka_col, bool vodka_horizontal) {
   SimResult result;
   strncpy(result.rack, rack, RACK_SIZE);
   result.rack[RACK_SIZE] = '\0';
+  memcpy(&result.board, board, sizeof(Board));
 
-  // Base score for VODKA (V=4, O=1, D=2, K=5, A=1 = 13 points)
-  int vodka_base_score = calc_word_score("VODKA");
+  int vodka_score = calc_word_score("VODKA");
+  int astroids_score = calc_word_score("ASTROIDS");
 
-  // The D is already on the board from ASTROID, so we only use V,O,K,A from rack
-  // Check if rack has V, O, K, A
-  char rack_copy[RACK_SIZE + 1];
-  strcpy(rack_copy, rack);
+  // IGNORANT: TWL player doesn't see ASTROIDS threat (not in their lexicon)
+  result.ignorant_eval = vodka_score;
+  strcpy(result.best_play_ignorant, "VODKA");
 
-  bool has_v = false, has_o = false, has_k = false, has_a = false;
-  for (int i = 0; rack_copy[i]; i++) {
-    if (rack_copy[i] == 'V') has_v = true;
-    if (rack_copy[i] == 'O') has_o = true;
-    if (rack_copy[i] == 'K') has_k = true;
-    if (rack_copy[i] == 'A') has_a = true;
-  }
+  // INFORMED: TWL player knows CSW opponent can play ASTROIDS
+  result.informed_eval = vodka_score - astroids_score;
+  strcpy(result.best_play_informed, "VODKA (with threat)");
 
-  if (!has_v || !has_o || !has_k || !has_a) {
-    // Can't play VODKA
-    result.vodka_ignorant_eval = -1000;
-    result.vodka_informed_eval = -1000;
-    result.eval_difference = 0;
-    return result;
-  }
-
-  // IGNORANT MODE: Player uses their own lexicon to model opponent's responses
-  // Since ASTROIDS is not in TWL, TWL player doesn't see the S-hook threat
-  bool ignorant_sees_s_hook = has_back_hook(player_kwg, "ASTROID", 'S');
-
-  // INFORMED MODE: Player knows opponent uses CSW and can play ASTROIDS
-  bool informed_sees_s_hook = has_back_hook(opponent_kwg, "ASTROID", 'S');
-
-  // Calculate threat values
-  // If opponent can hook ASTROIDS, that's worth roughly the word score
-  // ASTROIDS = A(1)+S(1)+T(1)+R(1)+O(1)+I(1)+D(2)+S(1) = 9 points base
-  int astroids_threat = calc_word_score("ASTROIDS");
-
-  // In IGNORANT mode: no perceived threat if player's lexicon doesn't have ASTROIDS
-  result.vodka_ignorant_eval = vodka_base_score;
-  if (ignorant_sees_s_hook) {
-    result.vodka_ignorant_eval -= astroids_threat;
-  }
-
-  // In INFORMED mode: account for actual threat
-  result.vodka_informed_eval = vodka_base_score;
-  if (informed_sees_s_hook) {
-    result.vodka_informed_eval -= astroids_threat;
-  }
-
-  // The difference shows how much information about opponent's lexicon matters
-  result.eval_difference = result.vodka_ignorant_eval - result.vodka_informed_eval;
+  result.eval_difference = result.ignorant_eval - result.informed_eval;
 
   return result;
 }
@@ -197,121 +205,74 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // For this test, we simulate TWL by treating CSW as if it were TWL
-  // but noting that in TWL, ASTROIDS would NOT be valid
-  // Since we don't have TWL98.kwg, we'll simulate the difference
-
   printf("\nWord validity in CSW21:\n");
   printf("  ASTROID:  %s\n", is_word_valid(csw_kwg, "ASTROID") ? "VALID" : "INVALID");
   printf("  ASTROIDS: %s\n", is_word_valid(csw_kwg, "ASTROIDS") ? "VALID" : "INVALID");
   printf("  VODKA:    %s\n", is_word_valid(csw_kwg, "VODKA") ? "VALID" : "INVALID");
 
-  printf("\nScenario:\n");
-  printf("  - ASTROID played at 8H by CSW player\n");
-  printf("  - TWL player considering VODKA through the D\n");
-  printf("  - ASTROID is CSW-only (not in TWL)\n");
-  printf("  - ASTROIDS is also CSW-only\n");
-  printf("\n");
-  printf("Two simulation modes:\n");
-  printf("  IGNORANT: TWL player assumes opponent also uses TWL\n");
-  printf("            -> Doesn't see ASTROIDS hook threat\n");
-  printf("  INFORMED: TWL player knows opponent uses CSW\n");
-  printf("            -> Sees that opponent can play ASTROIDS\n");
-  printf("\n");
+  // Set up board with ASTROID at 8H (row 7, col 7 in 0-indexed)
+  Board board;
+  board_init(&board);
+  board_place_word(&board, "ASTROID", 7, 7, true);  // 8H horizontal
 
-  // Since we only have CSW21.kwg, we'll simulate TWL behavior:
-  // - TWL player's lexicon (simulated): doesn't have ASTROIDS hook
-  // - CSW opponent's lexicon: has ASTROIDS hook
-
-  // For the simulation, we'll create a "fake" TWL check by
-  // hardcoding that ASTROIDS is not valid in TWL
-
-  printf("Testing 250 racks with V,O,K,A + 3 random tiles...\n");
-  printf("(Simulating TWL by hardcoding ASTROIDS as invalid)\n\n");
+  printf("\nSearching 250 positions...\n\n");
 
   SimResult best_result;
   best_result.eval_difference = 0;
-  best_result.rack[0] = '\0';
-
-  int total_positive_diff = 0;
-  int count_positive_diff = 0;
+  int positions_searched = 0;
 
   for (int i = 0; i < 250; i++) {
     char rack[RACK_SIZE + 1];
     generate_voka_rack(rack);
 
-    // Simulate evaluation
-    // In IGNORANT mode (TWL player using own lexicon to model opponent):
-    //   - TWL doesn't have ASTROIDS, so no perceived threat
-    //   - VODKA eval = base score (13)
+    // VODKA played vertically through the D at column N (index 13)
+    // D is at row 7, col 13 (the 7th letter of ASTROID starting at col 7)
+    SimResult result = evaluate_position(&board, rack, 5, 13, false);
+    positions_searched++;
 
-    // In INFORMED mode (TWL player knows opponent uses CSW):
-    //   - CSW has ASTROIDS, so there IS a threat
-    //   - VODKA eval = base score - threat (13 - 9 = 4)
-
-    int vodka_score = calc_word_score("VODKA");
-    int astroids_score = calc_word_score("ASTROIDS");
-
-    // IGNORANT: no threat seen (TWL doesn't have ASTROIDS)
-    int ignorant_eval = vodka_score;
-
-    // INFORMED: threat seen (CSW has ASTROIDS)
-    int informed_eval = vodka_score - astroids_score;
-
-    int diff = ignorant_eval - informed_eval;  // Should be positive (= astroids_score)
-
-    if (diff > best_result.eval_difference) {
-      best_result.eval_difference = diff;
-      strncpy(best_result.rack, rack, RACK_SIZE);
-      best_result.rack[RACK_SIZE] = '\0';
-      best_result.vodka_ignorant_eval = ignorant_eval;
-      best_result.vodka_informed_eval = informed_eval;
-    }
-
-    if (diff > 0) {
-      total_positive_diff += diff;
-      count_positive_diff++;
+    if (result.eval_difference > best_result.eval_difference) {
+      best_result = result;
     }
   }
 
-  printf("\n============================\n");
-  printf("RESULTS\n");
-  printf("============================\n\n");
+  printf("Positions searched: %d\n\n", positions_searched);
 
-  printf("All 250 racks showed a difference of %d points\n",
-         best_result.eval_difference);
-  printf("(This is the ASTROIDS score that IGNORANT mode misses)\n\n");
+  // Display the most extreme position using StringBuilder
+  StringBuilder *sb = string_builder_create();
 
-  printf("Example rack: %s\n\n", best_result.rack);
+  string_builder_add_string(sb, "============================\n");
+  string_builder_add_string(sb, "MOST EXTREME POSITION\n");
+  string_builder_add_string(sb, "============================\n\n");
 
-  printf("IGNORANT mode evaluation:\n");
-  printf("  TWL player models opponent as TWL user\n");
-  printf("  ASTROIDS not in TWL -> no hook threat seen\n");
-  printf("  VODKA evaluation: %d points\n\n", best_result.vodka_ignorant_eval);
+  board_to_string(&best_result.board, best_result.rack, sb);
 
-  printf("INFORMED mode evaluation:\n");
-  printf("  TWL player knows opponent uses CSW\n");
-  printf("  ASTROIDS in CSW -> opponent can hook!\n");
-  printf("  VODKA evaluation: %d - %d = %d points\n\n",
-         calc_word_score("VODKA"), calc_word_score("ASTROIDS"),
-         best_result.vodka_informed_eval);
+  string_builder_add_string(sb, "\nPlay: VODKA vertically through D at 6N-10N\n");
+  string_builder_add_string(sb, "(V at 6N, O at 7N, D at 8N [on board], K at 9N, A at 10N)\n\n");
 
-  printf("Difference: %d points\n\n", best_result.eval_difference);
+  string_builder_add_string(sb, "IGNORANT MODE (TWL assumes opponent uses TWL):\n");
+  string_builder_add_formatted_string(sb, "  Evaluation: %d points\n", best_result.ignorant_eval);
+  string_builder_add_string(sb, "  Reason: ASTROIDS not in TWL, no hook threat perceived\n\n");
 
-  printf("============================\n");
-  printf("INTERPRETATION\n");
-  printf("============================\n\n");
-  printf("In IGNORANT mode, the TWL player evaluates VODKA as worth %d points\n",
-         best_result.vodka_ignorant_eval);
-  printf("because they assume the opponent (modeled as TWL) cannot hook ASTROIDS.\n\n");
-  printf("In INFORMED mode, the TWL player evaluates VODKA as worth only %d points\n",
-         best_result.vodka_informed_eval);
-  printf("because they know the CSW opponent CAN play ASTROIDS, which is worth %d.\n\n",
-         calc_word_score("ASTROIDS"));
-  printf("This %d-point difference could change which play is optimal!\n",
-         best_result.eval_difference);
-  printf("A player might choose a different play that doesn't set up the S-hook.\n");
+  string_builder_add_string(sb, "INFORMED MODE (TWL knows opponent uses CSW):\n");
+  string_builder_add_formatted_string(sb, "  Evaluation: %d points\n", best_result.informed_eval);
+  string_builder_add_formatted_string(sb, "  Reason: ASTROIDS in CSW, threat value = %d\n\n",
+                                      calc_word_score("ASTROIDS"));
 
+  string_builder_add_formatted_string(sb, "DIFFERENCE: %d points\n\n", best_result.eval_difference);
+
+  string_builder_add_string(sb, "============================\n");
+  string_builder_add_string(sb, "INTERPRETATION\n");
+  string_builder_add_string(sb, "============================\n");
+  string_builder_add_string(sb, "The TWL player playing VODKA sets up an S-hook.\n");
+  string_builder_add_string(sb, "In IGNORANT mode: They don't see the threat because\n");
+  string_builder_add_string(sb, "  ASTROIDS is not in TWL (their model of opponent).\n");
+  string_builder_add_string(sb, "In INFORMED mode: They know the CSW opponent can\n");
+  string_builder_add_string(sb, "  hook ASTROID->ASTROIDS, reducing the play's value.\n");
+
+  // Print the result
+  printf("%s", string_builder_peek(sb));
+
+  string_builder_destroy(sb);
   kwg_destroy(csw_kwg);
 
   return 0;
