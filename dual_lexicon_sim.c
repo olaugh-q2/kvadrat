@@ -141,9 +141,10 @@ int main(int argc, char *argv[]) {
   printf("Word validity in CSW21:\n");
   printf("  ASTROID:  %s (CSW-only)\n", is_word_valid(csw_kwg, "ASTROID") ? "YES" : "NO");
   printf("  ASTROIDS: %s (CSW-only)\n", is_word_valid(csw_kwg, "ASTROIDS") ? "YES" : "NO");
-  printf("  VODKA:    %s (both lexicons)\n", is_word_valid(csw_kwg, "VODKA") ? "YES" : "NO");
-  printf("  STEAK:    %s (both lexicons)\n", is_word_valid(csw_kwg, "STEAK") ? "YES" : "NO");
-  printf("  STOVE:    %s (both lexicons)\n", is_word_valid(csw_kwg, "STOVE") ? "YES" : "NO");
+  printf("  VODKA:    %s\n", is_word_valid(csw_kwg, "VODKA") ? "YES" : "NO");
+  printf("  SKATE:    %s\n", is_word_valid(csw_kwg, "SKATE") ? "YES" : "NO");
+  printf("  STOVE:    %s\n", is_word_valid(csw_kwg, "STOVE") ? "YES" : "NO");
+  printf("  TOKES:    %s\n", is_word_valid(csw_kwg, "TOKES") ? "YES" : "NO");
   printf("\n");
 
   // Set up board
@@ -158,38 +159,53 @@ int main(int argc, char *argv[]) {
   string_builder_add_string(sb, "Board: ASTROID at 8H (CSW-only word played by opponent)\n\n");
   board_to_string(&board, sb);
 
-  string_builder_add_string(sb, "\nRack: VOKAEST (contains V,O,K,A for VODKA and S,T,E,A,K for STEAK)\n\n");
+  string_builder_add_string(sb, "\nRack: VOKASTE (V,O,K,A,S,T,E)\n");
+  string_builder_add_string(sb, "Turn 2: All plays must connect to ASTROID!\n\n");
 
-  // Define the candidate plays
-  // VODKA through D opens the ASTROIDS S-hook (9 pts threat in CSW)
-  // STEAK elsewhere scores slightly less but creates no CSW-specific threat
-  int astroids_threat = calc_word_score("ASTROIDS");  // 9 points
+  // The S-hook at O8 lands on a TRIPLE WORD SCORE!
+  // ASTROIDS base = 9, on TWS = 27 points
+  // Plus opponent can extend vertically through S toward O1 (another TWS)
+  int astroids_base = calc_word_score("ASTROIDS");  // 9 points
+  int astroids_tws_threat = astroids_base * 3;  // 27 points on TWS at O8
 
+  // All plays connect to ASTROID (H8-N8):
+  // - VODKA vertical through D at N8
+  // - SKATE vertical through A at H8
+  // - STOVE vertical through O at L8
+  // - TOKES vertical through T at J8
   Play plays[] = {
-    {"VODKA (N6 vert)", "N6", 22, astroids_threat},  // Through D, opens ASTROIDS
-    {"STEAK (A1 horiz)", "A1", 20, 0},               // Elsewhere, no threat
-    {"STOVE (B1 horiz)", "B1", 18, 0},               // Elsewhere, no threat
+    {"VODKA (N6 vert)", "N6", 22, astroids_tws_threat},  // Through D, opens ASTROIDS+TWS
+    {"SKATE (H6 vert)", "H6", 18, 0},                    // Through A at H8
+    {"STOVE (L6 vert)", "L6", 16, 0},                    // Through O at L8
+    {"TOKES (J8 down)", "J8", 14, 0},                    // Through T at J8
   };
-  int num_plays = 3;
+  int num_plays = 4;
 
-  string_builder_add_string(sb, "CANDIDATE PLAYS (all from rack VOKAEST):\n");
-  string_builder_add_string(sb, "=========================================\n\n");
+  string_builder_add_string(sb, "CANDIDATE PLAYS (all connect to ASTROID):\n");
+  string_builder_add_string(sb, "==========================================\n\n");
 
-  string_builder_add_string(sb, "1. VODKA at N6 (vertical through the D in ASTROID)\n");
+  string_builder_add_string(sb, "1. VODKA at N6 (vertical through D at N8)\n");
   string_builder_add_string(sb, "   - Uses V,O,K,A from rack + D on board\n");
   string_builder_add_string(sb, "   - Scores 22 points\n");
-  string_builder_add_string(sb, "   - BUT: Leaves S-hook open. ASTROID + S = ASTROIDS\n");
-  string_builder_add_formatted_string(sb, "   - CSW opponent can score %d points with ASTROIDS\n\n", astroids_threat);
+  string_builder_add_string(sb, "   - THREAT: Opens S-hook at O8 which is a TWS!\n");
+  string_builder_add_string(sb, "   - CSW opponent plays S at O8 -> ASTROIDS on TWS\n");
+  string_builder_add_formatted_string(sb, "   - ASTROIDS = %d base x 3 = %d points!\n\n",
+      astroids_base, astroids_tws_threat);
 
-  string_builder_add_string(sb, "2. STEAK at A1 (horizontal, away from ASTROID)\n");
-  string_builder_add_string(sb, "   - Uses S,T,E,A,K from rack\n");
-  string_builder_add_string(sb, "   - Scores 20 points\n");
-  string_builder_add_string(sb, "   - Does NOT expose the ASTROIDS hook\n\n");
-
-  string_builder_add_string(sb, "3. STOVE at B1 (horizontal, away from ASTROID)\n");
-  string_builder_add_string(sb, "   - Uses S,T,O,V,E from rack\n");
+  string_builder_add_string(sb, "2. SKATE at H6 (vertical through A at H8)\n");
+  string_builder_add_string(sb, "   - Uses S,K,T,E from rack + A on board\n");
   string_builder_add_string(sb, "   - Scores 18 points\n");
-  string_builder_add_string(sb, "   - Does NOT expose the ASTROIDS hook\n\n");
+  string_builder_add_string(sb, "   - Does NOT expose the O8 TWS hook\n\n");
+
+  string_builder_add_string(sb, "3. STOVE at L6 (vertical through O at L8)\n");
+  string_builder_add_string(sb, "   - Uses S,T,V,E from rack + O on board\n");
+  string_builder_add_string(sb, "   - Scores 16 points\n");
+  string_builder_add_string(sb, "   - Does NOT expose the O8 TWS hook\n\n");
+
+  string_builder_add_string(sb, "4. TOKES at J8 down (vertical through T at J8)\n");
+  string_builder_add_string(sb, "   - Uses O,K,E,S from rack + T on board\n");
+  string_builder_add_string(sb, "   - Scores 14 points\n");
+  string_builder_add_string(sb, "   - Does NOT expose the O8 TWS hook\n\n");
 
   string_builder_add_string(sb, "=====================================================\n");
   string_builder_add_string(sb, "EVALUATION IN EACH MODE\n");
@@ -207,7 +223,8 @@ int main(int argc, char *argv[]) {
 
   string_builder_add_formatted_string(sb, "INFORMED MODE choice: %s (%d pts)\n",
       informed_choice->word, evaluate_play_informed(informed_choice));
-  string_builder_add_string(sb, "  (Knows opponent can play ASTROIDS for 9 pts)\n\n");
+  string_builder_add_formatted_string(sb, "  (Knows opponent can play ASTROIDS on TWS for %d pts)\n\n",
+      astroids_tws_threat);
 
   string_builder_add_string(sb, "=====================================================\n");
   string_builder_add_string(sb, "CONCLUSION\n");
@@ -219,9 +236,11 @@ int main(int argc, char *argv[]) {
         ignorant_choice->word, evaluate_play_ignorant(ignorant_choice));
     string_builder_add_formatted_string(sb, "INFORMED picks %s for %d adjusted points\n\n",
         informed_choice->word, evaluate_play_informed(informed_choice));
-    string_builder_add_string(sb, "The informed player avoids VODKA because the 9-point\n");
-    string_builder_add_string(sb, "ASTROIDS threat (which only CSW players can exploit)\n");
-    string_builder_add_string(sb, "makes it worse than alternatives that score slightly less.\n");
+    string_builder_add_formatted_string(sb, "The informed player avoids VODKA because the %d-point\n",
+        astroids_tws_threat);
+    string_builder_add_string(sb, "ASTROIDS-on-TWS threat (CSW-only) makes it score NEGATIVE!\n");
+    string_builder_add_formatted_string(sb, "VODKA adjusted = 22 - %d = %d points.\n",
+        astroids_tws_threat, 22 - astroids_tws_threat);
   } else {
     string_builder_add_string(sb, "Both modes chose the same play.\n");
   }
