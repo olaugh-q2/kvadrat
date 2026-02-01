@@ -293,6 +293,35 @@ int main(int argc, char *argv[]) {
 
   board_to_string(&best_result.board, best_result.rack, sb);
 
+  // Show board with VODKA played
+  string_builder_add_string(sb, "\nBoard after playing VODKA at 6N (through the D):\n");
+  string_builder_add_string(sb, "   A B C D E F G H I J K L M N O \n");
+  string_builder_add_string(sb, "   ------------------------------\n");
+  for (int r = 0; r < BOARD_SIZE; r++) {
+    string_builder_add_formatted_string(sb, "%2d|", r + 1);
+    for (int c = 0; c < BOARD_SIZE; c++) {
+      char tile = best_result.board.tiles[r][c];
+      // Show VODKA vertically at column N (index 13), rows 5-9 (indices 4-8)
+      // V at row 6 (idx 5), O at row 7 (idx 6), D at row 8 (idx 7, already there),
+      // K at row 9 (idx 8), A at row 10 (idx 9)
+      if (c == 13) {
+        if (r == 5) tile = 'V';
+        else if (r == 6) tile = 'O';
+        // r == 7 already has D from ASTROID
+        else if (r == 8) tile = 'K';
+        else if (r == 9) tile = 'A';
+      }
+      string_builder_add_char(sb, tile ? tile : '.');
+      string_builder_add_char(sb, ' ');
+    }
+    if (r == 5) string_builder_add_string(sb, " <- V");
+    if (r == 6) string_builder_add_string(sb, " <- O");
+    if (r == 7) string_builder_add_string(sb, " <- ASTROID with D shared");
+    if (r == 8) string_builder_add_string(sb, " <- K");
+    if (r == 9) string_builder_add_string(sb, " <- A  (opponent can now play ASTROIDS!)");
+    string_builder_add_char(sb, '\n');
+  }
+
   string_builder_add_string(sb, "\nCandidate plays:\n");
   string_builder_add_string(sb, "                           Raw    Threat   Net\n");
   for (int i = 0; i < best_result.num_plays; i++) {
