@@ -49,6 +49,9 @@ add_executable(word_bag_maker "word_bag_maker.c" "apple_compat_endian.h" "filepr
 add_executable(permutation_evaluator "permutation_evaluator.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
                "string_util.h" "string_util.c" "util.h" "util.c" "bag.h" "tetrominos.h" "tetrominos.c" "playfield.h" "playfield.c" "square.h")
 
+add_executable(dual_lexicon_sim "dual_lexicon_sim.c" "apple_compat_endian.h" "fileproxy.h" "fileproxy.c" "kwg.h" "log.h" "log.c"
+               "string_util.h" "string_util.c" "util.h" "util.c" "bag.h" "session_state.h" "session_state.c")
+
 #Link raylib to main
 target_link_libraries(main
     raylib
