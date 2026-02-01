@@ -1,7 +1,7 @@
 // Kvadrat Web - A Tetris word game
 // Based on the original Kvadrat - uses same KWG dictionary and scoring logic
 
-const BUILD_TIME = '2026-01-31 23:35 UTC';
+const BUILD_TIME = '2026-01-31 23:38 UTC';
 
 // Debug: track actual frame rate
 let frameCount = 0;
@@ -28,7 +28,7 @@ const MINIMUM_WORD_SCORE = 40;
 const LATERAL_MOVEMENT_DELAY = 10;
 const LATERAL_MOVEMENT_REPEAT_DELAY = 2;
 const ROTATION_DELAY = 30;
-const SOFT_LOCK_DELAY = 3;
+const SOFT_LOCK_DELAY = 15;
 const ENTRY_DELAY = 1;
 const LINE_CLEAR_DELAY = 10;
 const GRAVITY_DELAY = 12;
