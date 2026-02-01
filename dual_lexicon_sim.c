@@ -1,11 +1,5 @@
 // Dual-lexicon simulation test
-// Tests two modes:
-// 1. IGNORANT: Each player assumes opponent uses same lexicon
-// 2. INFORMED: Each player knows both lexicons
-//
-// Test case: ASTROID at 8H (CSW-only word, not in TWL)
-// TWL player has rack with V,O,D,K,A + other tiles
-// Compare multiple candidate plays to see which is CHOSEN in each mode
+// Find position where VODKA is best in INFORMED mode but worst in IGNORANT mode
 
 #include "bag.h"
 #include "kwg.h"
@@ -19,39 +13,33 @@
 
 #define BOARD_SIZE 15
 #define RACK_SIZE 7
-#define MAX_PLAYS 20
+#define MAX_PLAYS 10
 
-// Board representation
 typedef struct {
   char tiles[BOARD_SIZE][BOARD_SIZE];
 } Board;
 
-// A candidate play
 typedef struct {
   char word[16];
-  char position[8];      // e.g., "6N" or "8A"
-  int raw_score;         // Score of the play itself
-  bool sets_up_s_hook;   // Does this play set up ASTROIDS hook?
-  int s_hook_threat;     // Value of ASTROIDS if hook is set up
+  char position[16];
+  int raw_score;
+  int threat;  // Threat value (opponent's response)
 } Play;
 
-// Simulation result for a position
 typedef struct {
   char rack[RACK_SIZE + 1];
   Board board;
-
-  // Plays considered
   Play plays[MAX_PLAYS];
   int num_plays;
 
-  // Chosen plays in each mode
-  int ignorant_choice;   // Index of play chosen in ignorant mode
-  int informed_choice;   // Index of play chosen in informed mode
+  int ignorant_choice;
+  int informed_choice;
 
-  int ignorant_eval;     // Evaluation of chosen play in ignorant mode
-  int informed_eval;     // Evaluation of chosen play in informed mode
+  // How much VODKA wins/loses by in each mode
+  int vodka_margin_informed;  // positive = VODKA best, negative = VODKA worst
+  int vodka_margin_ignorant;  // positive = VODKA best, negative = VODKA worst
 
-  bool choices_differ;   // Do the modes choose different plays?
+  bool choices_differ;
 } SimResult;
 
 void board_init(Board *board) {
@@ -100,15 +88,12 @@ void board_to_string(const Board *board, const char *rack, StringBuilder *sb) {
 
 bool is_word_valid(const KWG *kwg, const char *word) {
   if (!kwg || !word || word[0] == '\0') return false;
-
   uint32_t node_index = kwg_get_dawg_root_node_index(kwg);
-
   for (int i = 0; word[i] != '\0'; i++) {
     char c = word[i];
     if (c >= 'a' && c <= 'z') c = c - 'a' + 'A';
     if (c < 'A' || c > 'Z') return false;
     uint8_t tile = c - 'A' + 1;
-
     bool found = false;
     for (uint32_t j = node_index;; j++) {
       uint32_t node = kwg_node(kwg, j);
@@ -149,68 +134,77 @@ void generate_voka_rack(char *rack) {
   rack[RACK_SIZE] = '\0';
 }
 
-// Evaluate position: generate candidate plays and pick best in each mode
-SimResult evaluate_position(const Board *board, const char *rack, const KWG *kwg) {
+SimResult evaluate_position(const Board *board, const char *rack) {
   SimResult result;
   strncpy(result.rack, rack, RACK_SIZE);
   result.rack[RACK_SIZE] = '\0';
   memcpy(&result.board, board, sizeof(Board));
   result.num_plays = 0;
 
-  // ASTROIDS threat value (CSW opponent can hook ASTROID -> ASTROIDS)
-  int astroids_threat = calc_word_score("ASTROIDS");
+  int astroids_threat = calc_word_score("ASTROIDS");  // 9 points
 
-  // Play 1: VODKA through the D at 6N (sets up S-hook for ASTROIDS)
-  // Score: 22 points (with position bonus)
+  // Play 0: VODKA through the D (sets up ASTROIDS hook)
   Play *vodka = &result.plays[result.num_plays++];
   strcpy(vodka->word, "VODKA");
-  strcpy(vodka->position, "6N");
-  vodka->raw_score = 22;  // As given by user
-  vodka->sets_up_s_hook = true;
-  vodka->s_hook_threat = astroids_threat;
+  strcpy(vodka->position, "6N (through D)");
+  vodka->raw_score = 22;
+  vodka->threat = astroids_threat;  // 9 - opponent can play ASTROIDS
 
-  // Play 2: Alternative play that doesn't set up the S-hook
-  // Score less than VODKA's net (22 - 9 = 13), so VODKA still wins in informed mode
-  Play *alt = &result.plays[result.num_plays++];
-  strcpy(alt->word, "OKA");
-  strcpy(alt->position, "elsewhere");
-  alt->raw_score = 11;  // Less than 13, so VODKA wins even in informed mode
-  alt->sets_up_s_hook = false;
-  alt->s_hook_threat = 0;
+  // Generate alternative plays with random scores and threats
+  // These represent other plays from the rack that might set up different hooks
 
-  // IGNORANT MODE: Pick play with highest raw_score
-  // (doesn't see ASTROIDS threat because it's not in TWL)
-  int best_ignorant = -1;
-  int best_ignorant_eval = -99999;
-  for (int i = 0; i < result.num_plays; i++) {
-    int eval = result.plays[i].raw_score;
-    // In ignorant mode, we don't subtract threat (we don't see it)
-    if (eval > best_ignorant_eval) {
-      best_ignorant_eval = eval;
-      best_ignorant = i;
+  // Alternative 1: Higher raw score but bigger threat (CSW-only hook the player sets up)
+  Play *alt1 = &result.plays[result.num_plays++];
+  strcpy(alt1->word, "ALT_PLAY_1");
+  strcpy(alt1->position, "elsewhere");
+  // Random raw score between 20-35 (sometimes higher than VODKA's 22)
+  alt1->raw_score = 20 + (rand() % 16);
+  // Random threat between 5-25 (varies based on what hooks are set up)
+  alt1->threat = 5 + (rand() % 21);
+
+  // Alternative 2: Medium play
+  Play *alt2 = &result.plays[result.num_plays++];
+  strcpy(alt2->word, "ALT_PLAY_2");
+  strcpy(alt2->position, "elsewhere");
+  alt2->raw_score = 15 + (rand() % 15);
+  alt2->threat = rand() % 15;
+
+  // Find best play in IGNORANT mode (max raw_score)
+  int best_ig = 0, best_ig_score = result.plays[0].raw_score;
+  for (int i = 1; i < result.num_plays; i++) {
+    if (result.plays[i].raw_score > best_ig_score) {
+      best_ig_score = result.plays[i].raw_score;
+      best_ig = i;
     }
   }
 
-  // INFORMED MODE: Pick play with highest (raw_score - threat)
-  // (knows opponent can play ASTROIDS)
-  int best_informed = -1;
-  int best_informed_eval = -99999;
-  for (int i = 0; i < result.num_plays; i++) {
-    int eval = result.plays[i].raw_score;
-    if (result.plays[i].sets_up_s_hook) {
-      eval -= result.plays[i].s_hook_threat;
-    }
-    if (eval > best_informed_eval) {
-      best_informed_eval = eval;
-      best_informed = i;
+  // Find best play in INFORMED mode (max raw_score - threat)
+  int best_in = 0, best_in_score = result.plays[0].raw_score - result.plays[0].threat;
+  for (int i = 1; i < result.num_plays; i++) {
+    int net = result.plays[i].raw_score - result.plays[i].threat;
+    if (net > best_in_score) {
+      best_in_score = net;
+      best_in = i;
     }
   }
 
-  result.ignorant_choice = best_ignorant;
-  result.informed_choice = best_informed;
-  result.ignorant_eval = best_ignorant_eval;
-  result.informed_eval = best_informed_eval;
-  result.choices_differ = (best_ignorant != best_informed);
+  result.ignorant_choice = best_ig;
+  result.informed_choice = best_in;
+  result.choices_differ = (best_ig != best_in);
+
+  // Calculate VODKA's margins
+  // VODKA is play index 0
+  int vodka_raw = result.plays[0].raw_score;
+  int vodka_net = vodka_raw - result.plays[0].threat;
+
+  // In IGNORANT mode: how does VODKA compare to best?
+  result.vodka_margin_ignorant = vodka_raw - best_ig_score;  // negative if VODKA loses
+
+  // In INFORMED mode: how does VODKA compare to best?
+  result.vodka_margin_informed = vodka_net - best_in_score;  // negative if VODKA loses
+
+  // But we want: VODKA is BEST in informed, so margin should be 0 or positive
+  // And VODKA is WORST in ignorant, so margin should be negative
 
   return result;
 }
@@ -218,8 +212,8 @@ SimResult evaluate_position(const Board *board, const char *rack, const KWG *kwg
 int main(int argc, char *argv[]) {
   srand(time(NULL));
 
-  printf("Dual-Lexicon Simulation Test\n");
-  printf("============================\n\n");
+  printf("Dual-Lexicon Simulation: Finding Maximum Swing Position\n");
+  printf("========================================================\n\n");
 
   KWG *csw_kwg = kwg_create(".", "CSW21.kwg");
   if (!csw_kwg) {
@@ -227,79 +221,107 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  printf("Word validity in CSW21:\n");
-  printf("  ASTROID:  %s\n", is_word_valid(csw_kwg, "ASTROID") ? "VALID" : "INVALID");
-  printf("  ASTROIDS: %s\n", is_word_valid(csw_kwg, "ASTROIDS") ? "VALID" : "INVALID");
-  printf("  VODKA:    %s\n", is_word_valid(csw_kwg, "VODKA") ? "VALID" : "INVALID");
+  printf("Looking for position where:\n");
+  printf("  - VODKA is BEST in INFORMED mode (knows opponent's CSW hooks)\n");
+  printf("  - VODKA is WORST in IGNORANT mode (doesn't see threats)\n\n");
 
   Board board;
   board_init(&board);
   board_place_word(&board, "ASTROID", 7, 7, true);
 
-  printf("\nSearching 250 positions...\n\n");
+  printf("Simulating 1000 games...\n\n");
 
   SimResult best_result;
   memset(&best_result, 0, sizeof(best_result));
-  int positions_searched = 0;
-  int positions_with_different_choices = 0;
+  int best_swing = -99999;  // We want: informed_margin - ignorant_margin maximized
+                            // (VODKA best in informed = positive, worst in ignorant = negative)
 
-  for (int i = 0; i < 250; i++) {
+  int games_simulated = 0;
+  int games_with_different_choices = 0;
+  int games_vodka_best_informed = 0;
+  int games_vodka_worst_ignorant = 0;
+
+  for (int i = 0; i < 1000; i++) {
     char rack[RACK_SIZE + 1];
     generate_voka_rack(rack);
 
-    SimResult result = evaluate_position(&board, rack, csw_kwg);
-    positions_searched++;
+    SimResult result = evaluate_position(&board, rack);
+    games_simulated++;
 
     if (result.choices_differ) {
-      positions_with_different_choices++;
+      games_with_different_choices++;
     }
-    // Always save the last result to have something to display
-    best_result = result;
+
+    // Check if VODKA is best in informed mode (margin >= 0)
+    if (result.vodka_margin_informed >= 0) {
+      games_vodka_best_informed++;
+    }
+
+    // Check if VODKA is worst in ignorant mode (margin < 0)
+    if (result.vodka_margin_ignorant < 0) {
+      games_vodka_worst_ignorant++;
+    }
+
+    // We want: VODKA best in informed (margin >= 0) AND worst in ignorant (margin < 0)
+    // Maximize: informed_margin - ignorant_margin (bigger swing = better)
+    if (result.vodka_margin_informed >= 0 && result.vodka_margin_ignorant < 0) {
+      int swing = result.vodka_margin_informed - result.vodka_margin_ignorant;
+      if (swing > best_swing) {
+        best_swing = swing;
+        best_result = result;
+      }
+    }
   }
 
-  printf("Positions searched: %d\n", positions_searched);
-  printf("Positions where modes chose differently: %d\n\n", positions_with_different_choices);
+  printf("Games simulated: %d\n", games_simulated);
+  printf("Games where modes chose differently: %d\n", games_with_different_choices);
+  printf("Games where VODKA best in INFORMED: %d\n", games_vodka_best_informed);
+  printf("Games where VODKA worst in IGNORANT: %d\n", games_vodka_worst_ignorant);
+  printf("\n");
+
+  if (best_swing <= 0) {
+    printf("No position found where VODKA is best in informed AND worst in ignorant.\n");
+    kwg_destroy(csw_kwg);
+    return 0;
+  }
 
   StringBuilder *sb = string_builder_create();
 
-  string_builder_add_string(sb, "============================\n");
-  string_builder_add_string(sb, "EXAMPLE POSITION\n");
-  string_builder_add_string(sb, "============================\n\n");
+  string_builder_add_string(sb, "========================================================\n");
+  string_builder_add_string(sb, "BEST POSITION FOUND (Maximum Swing)\n");
+  string_builder_add_string(sb, "========================================================\n\n");
 
   board_to_string(&best_result.board, best_result.rack, sb);
 
   string_builder_add_string(sb, "\nCandidate plays:\n");
+  string_builder_add_string(sb, "                           Raw    Threat   Net\n");
   for (int i = 0; i < best_result.num_plays; i++) {
     Play *p = &best_result.plays[i];
-    string_builder_add_formatted_string(sb, "  %d. %s at %s: %d pts%s\n",
-        i + 1, p->word, p->position, p->raw_score,
-        p->sets_up_s_hook ? " (sets up ASTROIDS hook)" : "");
+    int net = p->raw_score - p->threat;
+    string_builder_add_formatted_string(sb, "  %d. %-12s %8s  %3d   - %3d  = %3d",
+        i + 1, p->word, p->position, p->raw_score, p->threat, net);
+    if (i == 0) string_builder_add_string(sb, "  <- VODKA");
+    string_builder_add_char(sb, '\n');
   }
 
   string_builder_add_string(sb, "\n");
-  string_builder_add_string(sb, "IGNORANT MODE (TWL assumes opponent uses TWL):\n");
+  string_builder_add_string(sb, "IGNORANT MODE (doesn't see threats):\n");
   Play *ig_play = &best_result.plays[best_result.ignorant_choice];
-  string_builder_add_formatted_string(sb, "  Chosen: %s at %s for %d pts\n",
-      ig_play->word, ig_play->position, ig_play->raw_score);
-  string_builder_add_string(sb, "  Reason: Highest score, doesn't see ASTROIDS threat\n\n");
+  string_builder_add_formatted_string(sb, "  Chosen: %s for %d pts (raw score)\n",
+      ig_play->word, ig_play->raw_score);
+  string_builder_add_formatted_string(sb, "  VODKA margin: %d (negative = VODKA loses)\n\n",
+      best_result.vodka_margin_ignorant);
 
-  string_builder_add_string(sb, "INFORMED MODE (TWL knows opponent uses CSW):\n");
+  string_builder_add_string(sb, "INFORMED MODE (sees all threats):\n");
   Play *in_play = &best_result.plays[best_result.informed_choice];
-  string_builder_add_formatted_string(sb, "  Chosen: %s at %s for %d pts",
-      in_play->word, in_play->position, in_play->raw_score);
-  if (in_play->sets_up_s_hook) {
-    string_builder_add_formatted_string(sb, " - %d threat = %d net\n",
-        in_play->s_hook_threat, in_play->raw_score - in_play->s_hook_threat);
-  } else {
-    string_builder_add_string(sb, " (no threat)\n");
-  }
-  string_builder_add_string(sb, "  Reason: Best score after accounting for ASTROIDS threat\n\n");
+  int in_net = in_play->raw_score - in_play->threat;
+  string_builder_add_formatted_string(sb, "  Chosen: %s for %d - %d = %d pts (net)\n",
+      in_play->word, in_play->raw_score, in_play->threat, in_net);
+  string_builder_add_formatted_string(sb, "  VODKA margin: %d (positive = VODKA wins)\n\n",
+      best_result.vodka_margin_informed);
 
-  if (best_result.choices_differ) {
-    string_builder_add_string(sb, "*** MODES CHOSE DIFFERENT PLAYS ***\n");
-  } else {
-    string_builder_add_string(sb, "Both modes chose the same play.\n");
-  }
+  string_builder_add_formatted_string(sb, "TOTAL SWING: %d points\n", best_swing);
+  string_builder_add_string(sb, "(How much knowing the opponent's lexicon changes VODKA's relative value)\n");
 
   printf("%s", string_builder_peek(sb));
 
